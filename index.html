@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandbox - Salto y Modulos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Sandbox de Movimiento</h1>
+    
+    <div class="selector-container">
+        <button id="btnPersonaje1" class="btn-personaje activo" onclick="seleccionarPersonaje('personaje1')">Juan</button>
+        <button id="btnPersonaje2" class="btn-personaje" onclick="seleccionarPersonaje('personaje2')">Ame</button>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div class="controles">
+        <p>Flechas [ Izquierda / Derecha ] para correr | [ Barra Espaciadora ] para saltar</p>
+    </div>
+
+    <!-- Cargamos los módulos en orden lógico -->
+    <script src="personajes.js"></script>
+    <script src="controles.js"></script>
+    <script src="motor.js"></script>
+</body>
+</html>
