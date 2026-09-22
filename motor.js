@@ -16,6 +16,9 @@ const jugador = {
     contadorTiempo: 0,
     vida: 3,
     vidaMaxima: 3,
+    enSalto: false,
+    caidaPorHueco: false,
+    plataformaObjetivo: null,
 };
 
 function obtenerAlturaJugador() {
@@ -28,7 +31,7 @@ const gravedad = 0.6;
 const nivel = {
     pisoY: canvas.height - 35,
     huecoInicio: 360,
-    huecoAncho: 150,
+    huecoAncho: 160,
     respawnX: 100,
     respawnY: 180,
 };
@@ -49,6 +52,9 @@ function seleccionarPersonaje(idPersonaje) {
     jugador.x = nivel.respawnX;
     jugador.velocidadY = 0;
     jugador.enElSuelo = true;
+    jugador.enSalto = false;
+    jugador.caidaPorHueco = false;
+    jugador.plataformaObjetivo = null;
     
     // Estilos del botón
     document.getElementById("btnPersonaje1").classList.remove("activo");
@@ -105,6 +111,9 @@ function reiniciarJugador() {
     jugador.estado = "quieto";
     jugador.frameActual = 0;
     jugador.contadorTiempo = 0;
+    jugador.enSalto = false;
+    jugador.caidaPorHueco = false;
+    jugador.plataformaObjetivo = null;
 }
 
 function gameLoop() {
@@ -115,34 +124,11 @@ function gameLoop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    const estabaEnElSuelo = jugador.enElSuelo;
+
     // --- 1. FÍSICA Y GRAVEDAD ---
     jugador.velocidadY += gravedad; // La gravedad siempre empuja hacia abajo
     jugador.y += jugador.velocidadY;
-
-    const alturaPersonaje = obtenerAlturaJugador();
-    const centroX = jugador.x + configPersonaje.animaciones.correr.anchoFrame / 2;
-    const dentroHueco = centroX > nivel.huecoInicio && centroX < nivel.huecoInicio + nivel.huecoAncho;
-    const baseJugador = jugador.y + alturaPersonaje;
-
-    jugador.enElSuelo = false;
-
-    // Colisión con el suelo
-    if (!dentroHueco && baseJugador >= suelo) {
-        jugador.y = suelo - alturaPersonaje;
-        jugador.velocidadY = 0;
-        jugador.enElSuelo = true;
-    }
-
-    if (jugador.y > canvas.height + 60) {
-        reiniciarJugador();
-    }
-
-    // Salto (solo si está en el suelo)
-    if (teclas.salto && jugador.enElSuelo) {
-        jugador.velocidadY = -configPersonaje.fuerzaSalto; // Empuje hacia arriba
-        jugador.enElSuelo = false;
-        teclas.salto = false; // Evita que salte infinitamente si dejas presionado
-    }
 
     // --- 2. MOVIMIENTO HORIZONTAL ---
     if (teclas.derecha && jugador.x < canvas.width - configPersonaje.animaciones.correr.anchoFrame / 2) {
@@ -152,6 +138,52 @@ function gameLoop() {
     if (teclas.izquierda && jugador.x > -configPersonaje.animaciones.correr.anchoFrame / 4) {
         jugador.x -= configPersonaje.velocidad;
         jugador.direccion = "izquierda";
+    }
+
+    const alturaPersonaje = obtenerAlturaJugador();
+    const anchoPersonaje = configPersonaje.animaciones.correr.anchoFrame;
+    const jugadorIzquierda = jugador.x;
+    const jugadorDerecha = jugador.x + anchoPersonaje;
+    const huecoIzquierda = nivel.huecoInicio;
+    const huecoDerecha = nivel.huecoInicio + nivel.huecoAncho;
+    const apoyoMinimo = anchoPersonaje * 0.4;
+    const apoyoEnPisoIzquierdo = Math.max(0, Math.min(jugadorDerecha, huecoIzquierda) - jugadorIzquierda);
+    const apoyoEnPisoDerecho = Math.max(0, jugadorDerecha - Math.max(jugadorIzquierda, huecoDerecha));
+    const plataformaConApoyo = apoyoEnPisoIzquierdo >= apoyoMinimo
+        ? "izquierda"
+        : apoyoEnPisoDerecho >= apoyoMinimo
+            ? "derecha"
+            : null;
+    const baseJugador = jugador.y + alturaPersonaje;
+
+    jugador.enElSuelo = false;
+
+    const puedeAterrizar = plataformaConApoyo !== null
+        && !jugador.caidaPorHueco
+        && (!jugador.enSalto || jugador.plataformaObjetivo === plataformaConApoyo);
+
+    if (puedeAterrizar && jugador.velocidadY >= 0 && baseJugador >= suelo) {
+        jugador.y = suelo - alturaPersonaje;
+        jugador.velocidadY = 0;
+        jugador.enElSuelo = true;
+        jugador.enSalto = false;
+        jugador.plataformaObjetivo = null;
+    } else if (estabaEnElSuelo && plataformaConApoyo === null && !jugador.enSalto) {
+        jugador.caidaPorHueco = true;
+    }
+
+    if (jugador.y > canvas.height + 60) {
+        reiniciarJugador();
+    }
+
+    // Salto (solo si esta en el suelo)
+    if (teclas.salto && jugador.enElSuelo) {
+        jugador.velocidadY = -configPersonaje.fuerzaSalto; // Empuje hacia arriba
+        jugador.enElSuelo = false;
+        jugador.enSalto = true;
+        jugador.caidaPorHueco = false;
+        jugador.plataformaObjetivo = jugador.direccion === "izquierda" ? "izquierda" : "derecha";
+        teclas.salto = false; // Evita que salte infinitamente si dejas presionado
     }
 
     // --- 3. SELECCIÓN DE ESTADO ---

@@ -1,12 +1,12 @@
 // Carga de imagenes para el Personaje 1
-const p1Correr = new Image(); p1Correr.src = "correr-jp.png";
-const p1Quieto = new Image(); p1Quieto.src = "quieto-jp.png";
-const p1Salto = new Image(); p1Salto.src = "salto-jp.png";
+const p1Correr = new Image(); p1Correr.src = "assets/personajes/img/correr-jp.png";
+const p1Quieto = new Image(); p1Quieto.src = "assets/personajes/img/quieto-jp.png";
+const p1Salto = new Image(); p1Salto.src = "assets/personajes/img/salto-jp.png";
 
 // Carga de imagenes para el Personaje 2 (Guardia - reusando imagenes por ahora)
-const p2Correr = new Image(); p2Correr.src = "correr-ame.png"; 
-const p2Quieto = new Image(); p2Quieto.src = "quieto-ame.png";
-const p2Salto = new Image(); p2Salto.src = "salto-ame.png";
+const p2Correr = new Image(); p2Correr.src = "assets/personajes/img/correr-ame.png"; 
+const p2Quieto = new Image(); p2Quieto.src = "assets/personajes/img/quieto-ame.png";
+const p2Salto = new Image(); p2Salto.src = "assets/personajes/img/salto-ame.png";
 
 // Base de datos de habilidades y dimensiones
 const personajesDisponibles = {
