@@ -1,12 +1,12 @@
 // Carga de imagenes para el Personaje 1
-const p1Correr = new Image(); p1Correr.src = "assets/personajes/img/correr-jp.png";
-const p1Quieto = new Image(); p1Quieto.src = "assets/personajes/img/quieto-jp.png";
-const p1Salto = new Image(); p1Salto.src = "assets/personajes/img/salto-jp.png";
+const p1Correr = new Image(); p1Correr.src = "assets/sprites/jp/correr.png";
+const p1Quieto = new Image(); p1Quieto.src = "assets/sprites/jp/quieto.png";
+const p1Salto = new Image(); p1Salto.src = "assets/sprites/jp/salto.png";
 
-// Carga de imagenes para el Personaje 2 (Guardia - reusando imagenes por ahora)
-const p2Correr = new Image(); p2Correr.src = "assets/personajes/img/correr-ame.png"; 
-const p2Quieto = new Image(); p2Quieto.src = "assets/personajes/img/quieto-ame.png";
-const p2Salto = new Image(); p2Salto.src = "assets/personajes/img/salto-ame.png";
+// Carga de imagenes para el Personaje 2
+const p2Correr = new Image(); p2Correr.src = "assets/sprites/ame/correr.png"; 
+const p2Quieto = new Image(); p2Quieto.src = "assets/sprites/ame/quieto.png";
+const p2Salto = new Image(); p2Salto.src = "assets/sprites/ame/salto.png";
 
 // Base de datos de habilidades y dimensiones
 const personajesDisponibles = {
@@ -15,6 +15,17 @@ const personajesDisponibles = {
         velocidad: 4, // correr
         fuerzaSalto: 14,
         vidaMaxima: 3,
+        render: {
+            escala: 1.2,
+            offsetX: 0,
+            offsetY: -10
+        },
+        colision: {
+            ancho: 64,
+            alto: 172,
+            offsetX: 32,
+            offsetY: 9
+        },
         animaciones: {
             correr: { 
                 spriteSheet: p1Correr, 
@@ -46,6 +57,17 @@ const personajesDisponibles = {
         velocidad: 5,    // correr
         fuerzaSalto: 12,
         vidaMaxima: 3,
+        render: {
+            escala: 0.85,
+            offsetX: 0,
+            offsetY: 45
+        },
+        colision: {
+            ancho: 64,
+            alto: 172,
+            offsetX: 32,
+            offsetY: 9
+        },
         animaciones: {
             correr: { 
                 spriteSheet: p2Correr, 

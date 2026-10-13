@@ -1,20 +1,48 @@
 body {
     margin: 0; 
-    padding: 0; 
+    padding: 18px; 
     background-color: #1a1a1a;
     display: flex; 
     justify-content: center; 
     align-items: center;
-    height: 100vh; 
+    min-height: 100vh; 
     color: #ffffff; 
     font-family: Arial, sans-serif;
     flex-direction: column;
+    box-sizing: border-box;
+}
+
+.options{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
 }
 
 .selector-container { 
     margin-bottom: 15px; 
     display: flex; 
     gap: 10px; 
+}
+
+.selector-piso-container {
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #d7f7f7;
+    font-weight: bold;
+}
+
+#selectorPiso {
+    min-width: 280px;
+    background-color: #242b2b;
+    color: #ffffff;
+    border: 2px solid #00ffff;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .btn-personaje {
@@ -35,6 +63,11 @@ body {
 canvas { 
     border: 4px solid #00ffff; 
     background-color: #333333; 
+    max-width: min(1280px, calc(100vw - 36px));
+    max-height: calc(100vh - 190px);
+    aspect-ratio: 16 / 9;
+    width: auto;
+    height: auto;
 }
 
 .controles { 

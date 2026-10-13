@@ -7,14 +7,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Sandbox de Movimiento</h1>
-    
-    <div class="selector-container">
-        <button id="btnPersonaje1" class="btn-personaje activo" onclick="seleccionarPersonaje('personaje1')">Juan</button>
-        <button id="btnPersonaje2" class="btn-personaje" onclick="seleccionarPersonaje('personaje2')">Ame</button>
-    </div>
+    <h2>Sandbox de Movimiento</h2>
 
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="options">
+        
+        <div class="selector-piso-container">
+            <label for="selectorPiso">Piso</label>
+            <select id="selectorPiso"></select>
+        </div>
+        
+        <div class="selector-container">
+            <button id="btnPersonaje1" class="btn-personaje activo" onclick="seleccionarPersonaje('personaje1')">Juan</button>
+            <button id="btnPersonaje2" class="btn-personaje" onclick="seleccionarPersonaje('personaje2')">Ame</button>
+        </div>
+        
+    </div>
+    
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
     
     <div class="controles">
         <p>Flechas [ Izquierda / Derecha ] para correr | [ Barra Espaciadora ] para saltar</p>
@@ -23,6 +32,8 @@
     <!-- Cargamos los módulos en orden lógico -->
     <script src="personajes.js"></script>
     <script src="controles.js"></script>
+    <script src="niveles.js"></script>
+    <script src="escenario.js"></script>
     <script src="motor.js"></script>
 </body>
 </html>
