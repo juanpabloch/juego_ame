@@ -2,6 +2,32 @@
 
 Prototipo de plataforma lateral 2D con pisos modulares, plataformas, huecos y trampas.
 
+## Editor De Pisos
+
+Abre `admin.html` en Chrome o Edge. Carga los pisos de `niveles.js` y permite editarlos
+sin tocar codigo:
+
+- Las herramientas pintan sobre el piso: elige Piso, Pivote, Resbaladizo o Hueco y arrastra
+  en horizontal. El tramo que marques pasa a ser de ese tipo (o queda vacio, si es Hueco).
+  Pintar Piso sobre un hueco lo rellena.
+- Con Seleccionar, un clic elige una plataforma: arrastrala para moverla y arrastra sus
+  bordes para cambiarle el ancho.
+- Con Objeto, un clic coloca un objeto (una imagen de `assets/props/`). En el panel "Objeto"
+  se elige la imagen y si es de fondo, para saltar encima o solido. Con Seleccionar se mueve
+  arrastrando y se le cambia el tamano desde la esquina superior derecha.
+- Un hueco es el espacio que queda entre dos plataformas. El editor lo mide y marca en rojo
+  los que ningun personaje puede saltar.
+- El panel "Problemas" lista errores y avisos del piso (huecos imposibles, plataformas
+  superpuestas, imagenes que no existen) y ofrece arreglos de un clic.
+- "Probar" abre el juego con el piso tal como esta, aunque no este guardado.
+- "Guardar niveles.js" escribe el archivo. La primera vez pregunta donde: elige el
+  `niveles.js` de esta carpeta. En navegadores sin esa funcion (Firefox, Safari) descarga
+  el archivo y hay que reemplazarlo a mano.
+
+`niveles.js` contiene solo los datos y el editor lo reescribe completo al guardar. Las
+constantes y funciones (`TIPOS_PISO`, `TRAMPAS`, `piso()`, `pisoConHueco()`, ...) estan en
+`niveles_base.js`: el codigo propio va ahi, no en `niveles.js`.
+
 ## Idea Principal
 
 El juego separa tres tipos de imagenes:
@@ -18,10 +44,12 @@ seguir programando aunque el arte final aun no este exportado.
 ```text
 juego_ame/
 ├── index.html
+├── admin.html        (editor de pisos, con admin.js y admin.css)
 ├── personajes.js
 ├── controles.js
 ├── motor.js
-├── niveles.js
+├── niveles_base.js   (constantes y funciones para describir pisos)
+├── niveles.js        (datos de los pisos; lo escribe el editor)
 ├── escenario.js
 ├── assets/
 │   ├── sprites/
@@ -330,6 +358,7 @@ fallback si falta.
 - Ejecuta una revision rapida de sintaxis:
 
 ```bash
+node --check juego_ame/niveles_base.js
 node --check juego_ame/niveles.js
 node --check juego_ame/escenario.js
 node --check juego_ame/motor.js

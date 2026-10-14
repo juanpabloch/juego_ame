@@ -62,6 +62,7 @@ const CONFIG_HUECO = {
 let camaraX = 0;
 let estadosPlataformas = new Map();
 let ultimaPlataformaSolida = null;
+let superficiesObjetos = [];
 let framesTransicionRespawn = 0;
 
 function inicializarEstadosPlataformas() {
@@ -74,6 +75,10 @@ function inicializarEstadosPlataformas() {
             colisionActiva: true
         });
     });
+
+    superficiesObjetos = (pisoActivoConfig.objetos || [])
+        .filter((objeto) => objeto.modo !== MODOS_OBJETO.FONDO)
+        .map((objeto) => ({ ...objeto, esObjeto: true }));
 
     ultimaPlataformaSolida = pisoActivoConfig.plataformas.find((plataforma) => plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE)
         || pisoActivoConfig.plataformas[0]
@@ -127,10 +132,11 @@ function agregarVida(cantidad = 1) {
     return cambiarVida(cantidad);
 }
 
-function inicializarSelectorPisos() {
+function llenarSelectorPisos() {
     const selector = document.getElementById("selectorPiso");
     if (!selector) return;
 
+    selector.innerHTML = "";
     PISOS_CONFIG.forEach((piso) => {
         const opcion = document.createElement("option");
         opcion.value = piso.id;
@@ -139,9 +145,46 @@ function inicializarSelectorPisos() {
     });
 
     selector.value = pisoActivoConfig.id;
+}
+
+function activarPiso(idPiso) {
+    cambiarPisoActivo(idPiso);
+    camaraX = 0;
+    colocarJugadorSobrePlataforma(ultimaPlataformaSolida);
+
+    const selector = document.getElementById("selectorPiso");
+    if (selector) selector.value = pisoActivoConfig.id;
+}
+
+function inicializarSelectorPisos() {
+    const selector = document.getElementById("selectorPiso");
+    if (!selector) return;
+
+    llenarSelectorPisos();
     selector.addEventListener("change", (event) => {
-        cambiarPisoActivo(event.target.value);
+        activarPiso(event.target.value);
+        // Sin esto el selector conserva el foco y las flechas cambian de piso en vez de mover al jugador
+        event.target.blur();
     });
+}
+
+// Modo prueba: admin.html abre index.html?prueba=1 en un iframe y le envia los pisos sin guardar
+const MODO_PRUEBA = new URLSearchParams(window.location.search).has("prueba");
+
+function inicializarModoPrueba() {
+    if (!MODO_PRUEBA || window.parent === window) return;
+
+    document.body.classList.add("modo-prueba");
+    window.addEventListener("message", (event) => {
+        if (event.source !== window.parent || event.data?.tipo !== "juego_ame:cargar_pisos") return;
+        PISOS_CONFIG.splice(0, PISOS_CONFIG.length, ...event.data.pisos);
+        llenarSelectorPisos();
+        activarPiso(event.data.idActivo);
+    });
+    window.addEventListener("keydown", (event) => {
+        if (event.code === "Escape") window.parent.postMessage({ tipo: "juego_ame:cerrar_prueba" }, "*");
+    });
+    window.parent.postMessage({ tipo: "juego_ame:listo" }, "*");
 }
 
 function dibujarHud() {
@@ -237,6 +280,45 @@ function rangoJugadorSobrePlataforma(izquierda, derecha, plataforma, apoyoMinimo
     return superposicion >= apoyoMinimo;
 }
 
+// Los objetos con colision se pisan igual que una plataforma. No tienen indice: no son trampas.
+function buscarSuperficieObjeto(izquierda, derecha, apoyoMinimo, coincideAltura) {
+    const superficie = superficiesObjetos.find((objeto) => coincideAltura(objeto)
+        && rangoJugadorSobrePlataforma(izquierda, derecha, objeto, Math.min(apoyoMinimo, objeto.ancho / 2)));
+    return superficie ? { plataforma: superficie, indice: -1 } : null;
+}
+
+// Los objetos solidos frenan al jugador de costado y desde abajo. Por arriba se pisan como cualquier superficie.
+function resolverObjetosSolidos(xAnterior, yAnterior) {
+    const ancho = obtenerAnchoJugador();
+    const alto = obtenerAlturaJugador();
+    const offsetX = obtenerOffsetColisionX();
+    const offsetY = obtenerOffsetColisionY();
+
+    superficiesObjetos.forEach((objeto) => {
+        if (objeto.modo !== MODOS_OBJETO.SOLIDO) return;
+
+        const izquierda = jugador.x + offsetX;
+        const arriba = jugador.y + offsetY;
+        const finObjeto = objeto.x + objeto.ancho;
+        const baseObjeto = objeto.y + objeto.alto;
+        const seTocan = izquierda < finObjeto && izquierda + ancho > objeto.x
+            && arriba < baseObjeto && arriba + alto > objeto.y;
+        if (!seTocan) return;
+
+        // Viene desde arriba: lo resuelve el aterrizaje
+        if (yAnterior + offsetY + alto <= objeto.y + 8) return;
+
+        if (jugador.velocidadY < 0 && yAnterior + offsetY >= baseObjeto) {
+            jugador.y = baseObjeto - offsetY;
+            jugador.velocidadY = 0;
+            return;
+        }
+
+        const veniaPorIzquierda = xAnterior + offsetX + ancho / 2 < objeto.x + objeto.ancho / 2;
+        jugador.x = veniaPorIzquierda ? objeto.x - offsetX - ancho : finObjeto - offsetX;
+    });
+}
+
 function detectarPlataformaAterrizaje({ izquierda, derecha, apoyoMinimo, baseAnterior, baseActual }) {
     for (let indice = 0; indice < pisoActivoConfig.plataformas.length; indice++) {
         const plataforma = pisoActivoConfig.plataformas[indice];
@@ -250,7 +332,8 @@ function detectarPlataformaAterrizaje({ izquierda, derecha, apoyoMinimo, baseAnt
         }
     }
 
-    return null;
+    return buscarSuperficieObjeto(izquierda, derecha, apoyoMinimo,
+        (objeto) => baseAnterior <= objeto.y + 8 && baseActual >= objeto.y);
 }
 
 function detectarPlataformaPisada({ izquierda, derecha, apoyoMinimo, baseActual }) {
@@ -266,7 +349,8 @@ function detectarPlataformaPisada({ izquierda, derecha, apoyoMinimo, baseActual 
         }
     }
 
-    return null;
+    return buscarSuperficieObjeto(izquierda, derecha, apoyoMinimo,
+        (objeto) => Math.abs(baseActual - objeto.y) <= 10);
 }
 
 function actualizarTrampasPlataformas(plataformaActual, tiempoActual) {
@@ -490,6 +574,7 @@ function gameLoop(tiempoActual) {
     const altoJugador = obtenerAlturaJugador();
     const offsetColisionX = obtenerOffsetColisionX();
     const offsetColisionY = obtenerOffsetColisionY();
+    const xAnterior = jugador.x;
 
     if (teclas.derecha && jugador.x + offsetColisionX + anchoJugador < nivel.anchoMundo) {
         jugador.x += configPersonaje.velocidad;
@@ -499,6 +584,8 @@ function gameLoop(tiempoActual) {
         jugador.x -= configPersonaje.velocidad;
         jugador.direccion = "izquierda";
     }
+
+    resolverObjetosSolidos(xAnterior, yAnterior);
 
     const jugadorIzquierda = jugador.x + offsetColisionX;
     const jugadorDerecha = jugadorIzquierda + anchoJugador;
@@ -525,7 +612,7 @@ function gameLoop(tiempoActual) {
         jugador.enSalto = false;
         jugador.caidaPorHueco = false;
         jugador.plataformaObjetivo = null;
-        if (plataformaAterrizaje.plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE) {
+        if (plataformaAterrizaje.plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE && !plataformaAterrizaje.plataforma.esObjeto) {
             ultimaPlataformaSolida = plataformaAterrizaje.plataforma;
         }
     } else {
@@ -541,7 +628,7 @@ function gameLoop(tiempoActual) {
             jugador.velocidadY = 0;
             jugador.enElSuelo = true;
             jugador.caidaPorHueco = false;
-            if (plataformaPisada.plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE) {
+            if (plataformaPisada.plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE && !plataformaPisada.plataforma.esObjeto) {
                 ultimaPlataformaSolida = plataformaPisada.plataforma;
             }
         }
@@ -619,6 +706,7 @@ function gameLoop(tiempoActual) {
     camaraX += (Math.max(0, Math.min(objetivoCamara, nivel.anchoMundo - canvas.width)) - camaraX) * 0.12;
     dibujarEscenario(camaraX);
     dibujarPlataformas(ctx, pisoActivoConfig, camaraX);
+    dibujarObjetos(camaraX, false);
     const jugadorEnPantallaX = jugador.x - camaraX;
     const renderPersonaje = obtenerRenderPersonaje(anim);
     const jugadorRenderX = jugadorEnPantallaX + renderPersonaje.offsetX;
@@ -648,6 +736,7 @@ async function iniciarJuego() {
             cargarAssetsEscenario()
         ]);
         colocarJugadorSobrePlataforma(ultimaPlataformaSolida);
+        inicializarModoPrueba();
         requestAnimationFrame(gameLoop);
     } catch (error) {
         console.error("No se pudieron cargar los sprites:", error);

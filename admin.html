@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de pisos</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <header class="barra">
+        <div class="marca">
+            <strong>Editor de pisos</strong>
+            <span id="estadoGuardado" class="estado-guardado">Sin cambios</span>
+        </div>
+        <div class="barra-acciones">
+            <button id="btnDeshacer" class="btn btn-icono" title="Deshacer (⌘Z)">↶</button>
+            <button id="btnRehacer" class="btn btn-icono" title="Rehacer (⇧⌘Z)">↷</button>
+            <span class="separador"></span>
+            <button id="btnProbar" class="btn" title="Jugar este piso sin guardar">▶ Probar</button>
+            <button id="btnCodigo" class="btn" title="Ver el niveles.js que se va a generar">Ver código</button>
+            <button id="btnGuardar" class="btn btn-primario" title="Guardar niveles.js (⌘S)">Guardar niveles.js</button>
+        </div>
+    </header>
+
+    <div id="bannerBorrador" class="banner" hidden>
+        <span id="textoBorrador"></span>
+        <button id="btnRestaurarBorrador" class="btn btn-primario">Restaurar</button>
+        <button id="btnDescartarBorrador" class="btn">Descartar</button>
+    </div>
+
+    <div class="app">
+        <aside class="columna columna-pisos">
+            <div class="columna-titulo">
+                <h2>Pisos <span id="totalPisos" class="conteo"></span></h2>
+                <div class="grupo-botones">
+                    <button id="btnNuevoPiso" class="btn btn-icono" title="Nuevo piso">＋</button>
+                    <button id="btnDuplicarPiso" class="btn btn-icono" title="Duplicar piso">⧉</button>
+                    <button id="btnSubirPiso" class="btn btn-icono" title="Mover arriba">↑</button>
+                    <button id="btnBajarPiso" class="btn btn-icono" title="Mover abajo">↓</button>
+                    <button id="btnEliminarPiso" class="btn btn-icono btn-peligro" title="Eliminar piso">✕</button>
+                </div>
+            </div>
+            <div id="listaPisos" class="lista-pisos"></div>
+        </aside>
+
+        <main class="lienzo">
+            <div class="herramientas">
+                <div class="grupo-botones" id="grupoHerramientas">
+                    <button class="btn herramienta" data-herramienta="seleccionar" title="Seleccionar y mover (V)">Seleccionar <kbd>V</kbd></button>
+                    <button class="btn herramienta" data-herramienta="normal" title="Pintar piso normal (1)"><i class="punto tipo-normal"></i>Piso <kbd>1</kbd></button>
+                    <button class="btn herramienta" data-herramienta="pivote" title="Pintar trampa pivote (2)"><i class="punto tipo-pivote"></i>Pivote <kbd>2</kbd></button>
+                    <button class="btn herramienta" data-herramienta="resbaladizo" title="Pintar piso resbaladizo (3)"><i class="punto tipo-resbaladizo"></i>Resbaladizo <kbd>3</kbd></button>
+                    <button class="btn herramienta" data-herramienta="hueco" title="Abrir un hueco en el piso (4)"><i class="punto tipo-hueco"></i>Hueco <kbd>4</kbd></button>
+                    <button class="btn herramienta" data-herramienta="objeto" title="Colocar un objeto (5)"><i class="punto tipo-objeto"></i>Objeto <kbd>5</kbd></button>
+                </div>
+                <label class="opcion">Imán
+                    <select id="selectSnap">
+                        <option value="8">8 px</option>
+                        <option value="16">16 px</option>
+                        <option value="32" selected>32 px</option>
+                        <option value="64">64 px</option>
+                        <option value="128">128 px (tile)</option>
+                    </select>
+                </label>
+                <label class="opcion">Personaje
+                    <select id="selectPersonaje"></select>
+                </label>
+                <label class="opcion"><input type="checkbox" id="chkArcos" checked> Arcos de salto</label>
+                <label class="opcion"><input type="checkbox" id="chkFondo" checked> Fondo</label>
+                <div class="grupo-botones zoom">
+                    <button id="btnZoomMenos" class="btn btn-icono" title="Alejar">−</button>
+                    <span id="etiquetaZoom" class="zoom-valor">100%</span>
+                    <button id="btnZoomMas" class="btn btn-icono" title="Acercar">＋</button>
+                    <button id="btnEncajar" class="btn" title="Ajustar al alto (F)">Ajustar</button>
+                    <button id="btnVerTodo" class="btn" title="Ver el piso completo (A)">Ver todo</button>
+                </div>
+            </div>
+            <p id="pistaHerramienta" class="pista"></p>
+            <div class="lienzo-contenedor" id="contenedorLienzo">
+                <canvas id="editorCanvas"></canvas>
+            </div>
+            <canvas id="minimapa" class="minimapa" title="Clic para moverte por el piso"></canvas>
+            <div class="pie">
+                <span id="datoCursor">x 0 · y 0</span>
+                <span id="datoMundo"></span>
+                <span class="pie-ayuda">Rueda: desplazar · ⌘/Ctrl + rueda: zoom · Espacio + arrastrar: mover la vista · Supr: eliminar · ⌘Z: deshacer · Alt: sin imán</span>
+            </div>
+        </main>
+
+        <aside class="columna columna-inspector">
+            <section class="panel">
+                <h2>Piso</h2>
+                <div class="fila-campos">
+                    <label class="campo campo-corto">ID
+                        <input type="number" id="campoId" min="1" step="1">
+                    </label>
+                    <label class="campo">Nombre
+                        <input type="text" id="campoNombre">
+                    </label>
+                </div>
+                <label class="campo">Fondo <span id="estadoFondo" class="estado-activo"></span>
+                    <input type="text" id="campoFondo" list="listaFondos" spellcheck="false">
+                    <datalist id="listaFondos"></datalist>
+                </label>
+                <div class="fila-campos">
+                    <label class="campo">Tipo de piso
+                        <select id="campoTipoPiso"></select>
+                    </label>
+                    <label class="campo campo-corto">Color base
+                        <input type="color" id="campoColor">
+                    </label>
+                </div>
+                <div class="fila-campos">
+                    <label class="campo">Tema de tiles
+                        <input type="text" id="campoTema" list="listaTemas" spellcheck="false">
+                        <datalist id="listaTemas"></datalist>
+                    </label>
+                    <label class="campo campo-corto">Variantes
+                        <input type="number" id="campoVariantes" min="0" max="12" step="1">
+                    </label>
+                </div>
+                <p id="estadoTema" class="ayuda"></p>
+                <div class="campo">Trampas habilitadas
+                    <div id="chipsTrampas" class="chips"></div>
+                </div>
+                <div class="campo">Props permitidos
+                    <div id="chipsProps" class="chips"></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Plataforma <span id="tituloPlataforma" class="conteo"></span></h2>
+                <p id="vacioPlataforma" class="ayuda">Con la herramienta Seleccionar, haz clic en una plataforma para ver y editar sus datos.</p>
+                <div id="panelPlataforma" hidden>
+                    <div class="segmentado" id="segTipo"></div>
+                    <div class="fila-campos">
+                        <label class="campo">X
+                            <input type="number" id="platX" step="1" min="0">
+                        </label>
+                        <label class="campo">Ancho
+                            <input type="number" id="platAncho" step="1" min="64">
+                        </label>
+                        <label class="campo">Y
+                            <input type="number" id="platY" step="1">
+                        </label>
+                    </div>
+                    <label class="campo" id="grupoHueco">Hueco después (px)
+                        <input type="number" id="platHueco" step="1" min="0">
+                    </label>
+                    <p id="ayudaHueco" class="ayuda"></p>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnDuplicarPlat" class="btn" title="Duplicar (⌘D)">Duplicar</button>
+                        <button id="btnEliminarPlat" class="btn btn-peligro" title="Eliminar (Supr)">Eliminar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Objeto <span id="tituloObjeto" class="conteo"></span></h2>
+                <p id="vacioObjeto" class="ayuda">Con la herramienta Objeto, haz clic en el piso para colocar uno. Con Seleccionar, haz clic en un objeto para editarlo.</p>
+                <div id="panelObjeto" hidden>
+                    <label class="campo">Imagen <span id="estadoObjeto" class="estado-activo"></span>
+                        <input type="text" id="objTipo" list="listaObjetos" spellcheck="false">
+                        <datalist id="listaObjetos"></datalist>
+                    </label>
+                    <p id="ayudaObjeto" class="ayuda"></p>
+                    <div class="segmentado" id="segModo"></div>
+                    <p id="ayudaModo" class="ayuda"></p>
+                    <div class="fila-campos">
+                        <label class="campo">X
+                            <input type="number" id="objX" step="1" min="0">
+                        </label>
+                        <label class="campo">Y
+                            <input type="number" id="objY" step="1">
+                        </label>
+                    </div>
+                    <div class="fila-campos">
+                        <label class="campo">Ancho
+                            <input type="number" id="objAncho" step="1" min="16">
+                        </label>
+                        <label class="campo">Alto
+                            <input type="number" id="objAlto" step="1" min="16">
+                        </label>
+                    </div>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnTamanoOriginal" class="btn" title="Usar el tamaño real de la imagen">Tamaño original</button>
+                        <button id="btnApoyarObjeto" class="btn" title="Bajar el objeto hasta el piso que tiene debajo">Apoyar en el piso</button>
+                    </div>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnDuplicarObjeto" class="btn" title="Duplicar (⌘D)">Duplicar</button>
+                        <button id="btnEliminarObjeto" class="btn btn-peligro" title="Eliminar (Supr)">Eliminar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel panel-problemas">
+                <h2>Problemas <span id="resumenProblemas" class="conteo"></span></h2>
+                <div id="listaProblemas" class="lista-problemas"></div>
+            </section>
+        </aside>
+    </div>
+
+    <div class="modal" id="modalCodigo" hidden>
+        <div class="modal-caja">
+            <div class="modal-cabecera">
+                <h2>niveles.js</h2>
+                <button class="btn btn-icono" data-cerrar title="Cerrar">✕</button>
+            </div>
+            <p class="ayuda">Este es el archivo completo que se guarda. Reemplaza a <code>niveles.js</code> en la carpeta del juego.</p>
+            <textarea id="textareaCodigo" readonly spellcheck="false"></textarea>
+            <div class="modal-acciones">
+                <button id="btnCopiarCodigo" class="btn">Copiar</button>
+                <button id="btnDescargarCodigo" class="btn">Descargar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalPrueba" hidden>
+        <div class="modal-caja modal-prueba">
+            <div class="modal-cabecera">
+                <h2>Prueba <span id="tituloPrueba" class="conteo"></span></h2>
+                <div class="grupo-botones">
+                    <button id="btnReiniciarPrueba" class="btn">Reiniciar</button>
+                    <button class="btn btn-icono" data-cerrar title="Cerrar (Esc)">✕</button>
+                </div>
+            </div>
+            <iframe id="marcoPrueba" title="Prueba del piso"></iframe>
+            <p class="ayuda">Flechas para correr · Espacio para saltar · Esc para volver al editor. Se prueba el estado actual, aunque no esté guardado.</p>
+        </div>
+    </div>
+
+    <div id="avisos" class="avisos"></div>
+
+    <script src="niveles_base.js"></script>
+    <script src="niveles.js"></script>
+    <script src="personajes.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

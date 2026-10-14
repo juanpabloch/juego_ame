@@ -70,7 +70,17 @@ canvas {
     height: auto;
 }
 
-.controles { 
+/* index.html?prueba=1 dentro del iframe de admin.html */
+body.modo-prueba h2,
+body.modo-prueba .controles {
+    display: none;
+}
+
+body.modo-prueba canvas {
+    max-height: calc(100vh - 100px);
+}
+
+.controles {
     margin-top: 15px; 
     color: #888; 
     text-align: center; 

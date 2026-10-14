@@ -1,120 +1,6 @@
-const TIPOS_PISO = {
-    LINOLEO: "linoleo",
-    PARQUE: "parque",
-    CONCRETO: "concreto",
-    AZULEJO: "azulejo"
-};
-
-const TIPOS_PLATAFORMA = {
-    NORMAL: "normal",
-    PIVOTE: "pivote",
-    RESBALADIZO: "resbaladizo"
-};
-
-const TRAMPAS = {
-    HUECO_ROTO: "hueco_roto",
-    PIVOTE: "pivote",
-    RESBALADIZO: "resbaladizo"
-};
-
-const PROPS = {
-    ARCHIVADOR: "archivador",
-    ESCRITORIO: "escritorio",
-    CAMARA_SEGURIDAD: "camara_seguridad",
-    RADIADOR: "radiador",
-    EXTINTOR: "extintor",
-    PLANTA_SECA: "planta_seca",
-    TUBERIAS: "tuberias",
-    ESTANTES: "estantes",
-    NEVERA: "nevera",
-    LAVABO: "lavabo",
-    CAJAS: "cajas"
-};
-
-const TEMA_TILES_DEFAULT = "generico";
-const ALTURA_PLATAFORMA_DEFAULT = 560;
-
-function obtenerRutasTilesTema(tema = TEMA_TILES_DEFAULT) {
-    return {
-        piso: `assets/tiles/piso_${tema}.png`,
-        bordeRotoIzq: `assets/tiles/borde_roto_izq_${tema}.png`,
-        bordeRotoDer: `assets/tiles/borde_roto_der_${tema}.png`,
-        trampaPivote: `assets/tiles/trampa_pivote_${tema}.png`
-    };
-}
-
-function obtenerRutaPisoTema(tema = TEMA_TILES_DEFAULT, variante = null) {
-    if (variante === null || variante === undefined) {
-        return `assets/tiles/piso_${tema}.png`;
-    }
-
-    return `assets/tiles/piso_${tema}_${String(variante).padStart(2, "0")}.png`;
-}
-
-function crearPlataforma(x, ancho, tipo = TIPOS_PLATAFORMA.NORMAL, opciones = {}) {
-    return {
-        x,
-        y: opciones.y || ALTURA_PLATAFORMA_DEFAULT,
-        ancho,
-        tipo,
-        tieneHuecoDespues: Boolean(opciones.tieneHuecoDespues),
-        anchoHueco: opciones.anchoHueco || 0
-    };
-}
-
-function piso(x, ancho, opciones = {}) {
-    return crearPlataforma(x, ancho, TIPOS_PLATAFORMA.NORMAL, opciones);
-}
-
-function pisoConHueco(x, ancho, anchoHueco = 128, opciones = {}) {
-    return piso(x, ancho, {
-        ...opciones,
-        tieneHuecoDespues: true,
-        anchoHueco
-    });
-}
-
-function pivote(x, ancho, opciones = {}) {
-    return crearPlataforma(x, ancho, TIPOS_PLATAFORMA.PIVOTE, opciones);
-}
-
-function pivoteConHueco(x, ancho, anchoHueco = 128, opciones = {}) {
-    return pivote(x, ancho, {
-        ...opciones,
-        tieneHuecoDespues: true,
-        anchoHueco
-    });
-}
-
-function pisoResbaladizo(x, ancho, opciones = {}) {
-    return crearPlataforma(x, ancho, TIPOS_PLATAFORMA.RESBALADIZO, opciones);
-}
-
-function pisoResbaladizoConHueco(x, ancho, anchoHueco = 128, opciones = {}) {
-    return pisoResbaladizo(x, ancho, {
-        ...opciones,
-        tieneHuecoDespues: true,
-        anchoHueco
-    });
-}
-
-function crearPlataformasBase(variante = 0) {
-    const desplazamiento = variante % 2 === 0 ? 0 : 40;
-    const pisoDelMedio = variante % 3 === 0 ? pisoResbaladizoConHueco : pisoConHueco;
-    const pisoFinal = variante % 2 === 0 ? piso : pisoResbaladizo;
-
-    console.log("DESPLAZAMIENTO: ", desplazamiento)
-    console.log("MEDIO: ", pisoDelMedio)
-    console.log("FINAL: ", pisoFinal)
-
-    return [
-        pisoConHueco(0, 1090 + desplazamiento, 128),
-        // pivoteConHueco(648 + desplazamiento, 330, 112),
-        pisoDelMedio(1090 + desplazamiento, 470, 144),
-        pisoConHueco(1704 + desplazamiento, 390, 128),
-        pisoFinal(2756 + desplazamiento, 444)
-    ];
-}
+// Datos de los pisos. admin.html reescribe este archivo al guardar.
+// Las constantes y funciones que usa (TIPOS_PISO, TRAMPAS, PROPS, piso, pisoConHueco, objeto, ...)
+// estan en niveles_base.js.
 
 const PISOS_CONFIG = [
     {
@@ -124,12 +10,19 @@ const PISOS_CONFIG = [
         colorPlaceholder: "#2d3a34",
         tipoPiso: TIPOS_PISO.LINOLEO,
         tilesTema: "sotano",
-        tilesVariantes: 2, // cantidada de imagenes de pisos
+        tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.ARCHIVADOR, PROPS.ESCRITORIO, PROPS.CAMARA_SEGURIDAD],
-        // plataformas: crearPlataformasBase(1)
+        objetos: [
+            objeto("cajas", 864, 464, 96, 96, MODOS_OBJETO.FONDO)
+        ],
         plataformas: [
-            piso(0, 3200),
+            pisoConHueco(0, 384, 192),
+            pisoConHueco(576, 384, 192),
+            pisoConHueco(1152, 384, 192),
+            pisoConHueco(1728, 480, 192),
+            pisoConHueco(2400, 352, 192),
+            piso(2944, 256)
         ]
     },
     {
@@ -142,7 +35,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.ARCHIVADOR, PROPS.ESTANTES, PROPS.CAJAS],
-        plataformas: crearPlataformasBase(2)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 446, 192),
+            pisoConHueco(1728, 384, 192),
+            piso(2304, 896)
+        ]
     },
     {
         id: 3,
@@ -151,10 +49,16 @@ const PISOS_CONFIG = [
         colorPlaceholder: "#29363d",
         tipoPiso: TIPOS_PISO.CONCRETO,
         tilesTema: "mantenimiento",
-        tilesVariantes: 3,
+        tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO, TRAMPAS.RESBALADIZO],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(3)
+        plataformas: [
+            pisoConHueco(0, 480, 192),
+            piso(672, 458),
+            pisoConHueco(1130, 470, 160),
+            pisoConHueco(1760, 390, 186),
+            piso(2336, 904)
+        ]
     },
     {
         id: 4,
@@ -166,7 +70,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ESCRITORIO, PROPS.ARCHIVADOR, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(4)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 5,
@@ -178,7 +87,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 1,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO, TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.LAVABO, PROPS.TUBERIAS],
-        plataformas: crearPlataformasBase(5)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 6,
@@ -190,7 +104,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ESCRITORIO, PROPS.ARCHIVADOR],
-        plataformas: crearPlataformasBase(6)
+        plataformas: [
+            piso(0, 1090),
+            pisoResbaladizoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 7,
@@ -202,7 +121,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO, TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ARCHIVADOR, PROPS.ESCRITORIO, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(7)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 8,
@@ -214,7 +138,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO],
         propsPermitidos: [PROPS.CAJAS, PROPS.TUBERIAS, PROPS.EXTINTOR],
-        plataformas: crearPlataformasBase(8)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 9,
@@ -226,7 +155,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO, TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ARCHIVADOR, PROPS.ESCRITORIO, PROPS.PLANTA_SECA],
-        plataformas: crearPlataformasBase(9)
+        plataformas: [
+            piso(0, 1130),
+            pisoResbaladizoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 10,
@@ -238,7 +172,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(10)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 11,
@@ -250,7 +189,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 1,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO, TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ESCRITORIO, PROPS.NEVERA, PROPS.RADIADOR],
-        plataformas: crearPlataformasBase(11)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 12,
@@ -262,7 +206,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO, TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.NEVERA, PROPS.TUBERIAS, PROPS.CAJAS],
-        plataformas: crearPlataformasBase(12)
+        plataformas: [
+            piso(0, 1090),
+            pisoResbaladizoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 13,
@@ -274,7 +223,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 1,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO],
         propsPermitidos: [PROPS.ARCHIVADOR, PROPS.LAVABO],
-        plataformas: crearPlataformasBase(13)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 14,
@@ -286,7 +240,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.PIVOTE, TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.ESTANTES, PROPS.ESCRITORIO],
-        plataformas: crearPlataformasBase(14)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 15,
@@ -298,7 +257,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 2,
         trampasHabilitadas: [TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.ESCRITORIO, PROPS.ARCHIVADOR, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(15)
+        plataformas: [
+            piso(0, 1130),
+            pisoResbaladizoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 16,
@@ -310,7 +274,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(16)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 17,
@@ -322,7 +291,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.RESBALADIZO, TRAMPAS.HUECO_ROTO],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS],
-        plataformas: crearPlataformasBase(17)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 18,
@@ -334,7 +308,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO, TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS, PROPS.CAMARA_SEGURIDAD],
-        plataformas: crearPlataformasBase(18)
+        plataformas: [
+            piso(0, 1090),
+            pisoResbaladizoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     },
     {
         id: 19,
@@ -346,7 +325,12 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.PIVOTE],
         propsPermitidos: [PROPS.CAMARA_SEGURIDAD, PROPS.TUBERIAS],
-        plataformas: crearPlataformasBase(19)
+        plataformas: [
+            piso(0, 1130),
+            pisoConHueco(1130, 470, 144),
+            pisoConHueco(1744, 390, 662),
+            pisoResbaladizo(2796, 444)
+        ]
     },
     {
         id: 20,
@@ -358,10 +342,11 @@ const PISOS_CONFIG = [
         tilesVariantes: 3,
         trampasHabilitadas: [TRAMPAS.HUECO_ROTO, TRAMPAS.PIVOTE, TRAMPAS.RESBALADIZO],
         propsPermitidos: [PROPS.TUBERIAS, PROPS.CAJAS, PROPS.RADIADOR],
-        plataformas: crearPlataformasBase(20)
+        plataformas: [
+            piso(0, 1090),
+            pisoConHueco(1090, 470, 144),
+            pisoConHueco(1704, 390, 662),
+            piso(2756, 444)
+        ]
     }
 ];
-
-function obtenerPisoConfig(id) {
-    return PISOS_CONFIG.find((piso) => piso.id === Number(id)) || PISOS_CONFIG[0];
-}

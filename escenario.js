@@ -173,7 +173,7 @@ function obtenerFondoActivo() {
 
 function cambiarPisoActivo(idPiso) {
     pisoActivoConfig = obtenerPisoConfig(idPiso);
-    nivel.pisoY = pisoActivoConfig.plataformas[0]?.y || 365;
+    nivel.pisoY = pisoActivoConfig.plataformas[0]?.y || ALTURA_PLATAFORMA_DEFAULT;
     nivel.anchoMundo = calcularAnchoMundo(pisoActivoConfig);
     inicializarEstadosPlataformas();
 
@@ -235,14 +235,16 @@ function dibujarFondoParallax(camaraX) {
 }
 
 function obtenerPropsDecorativos(configPiso) {
+    // Las alturas se midieron con el piso en y=365: los props de suelo bajan junto con el piso actual
+    const ajustePiso = nivel.pisoY - 365;
     const plantillas = [
-        { tipo: PROPS.ESCRITORIO, x: 170, y: 291, ancho: 170 },
-        { tipo: PROPS.ARCHIVADOR, x: 435, y: 243 },
+        { tipo: PROPS.ESCRITORIO, x: 170, y: 291 + ajustePiso, ancho: 170 },
+        { tipo: PROPS.ARCHIVADOR, x: 435, y: 243 + ajustePiso },
         { tipo: PROPS.CAMARA_SEGURIDAD, x: 720, y: 72 },
-        { tipo: PROPS.RADIADOR, x: 990, y: 303 },
-        { tipo: PROPS.EXTINTOR, x: 1370, y: 286 },
-        { tipo: PROPS.PLANTA_SECA, x: 1910, y: 300 },
-        { tipo: PROPS.CAJAS, x: 2290, y: 318 },
+        { tipo: PROPS.RADIADOR, x: 990, y: 303 + ajustePiso },
+        { tipo: PROPS.EXTINTOR, x: 1370, y: 286 + ajustePiso },
+        { tipo: PROPS.PLANTA_SECA, x: 1910, y: 300 + ajustePiso },
+        { tipo: PROPS.CAJAS, x: 2290, y: 318 + ajustePiso },
         { tipo: PROPS.TUBERIAS, x: 2670, y: 92 }
     ];
 
@@ -344,7 +346,41 @@ function dibujarProps(camaraX) {
     ctx.restore();
 }
 
+function dibujarObjeto(objeto) {
+    const imagen = AssetManager.obtenerImagen(obtenerRutaObjeto(objeto.tipo), {
+        color: pisoActivoConfig.colorPlaceholder,
+        tipo: "prop",
+        etiqueta: objeto.tipo
+    });
+
+    if (!imagen.esFallback) {
+        ctx.drawImage(imagen, objeto.x, objeto.y, objeto.ancho, objeto.alto);
+        return;
+    }
+
+    ctx.fillStyle = ajustarColorHex(pisoActivoConfig.colorPlaceholder, 46);
+    ctx.fillRect(objeto.x, objeto.y, objeto.ancho, objeto.alto);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.strokeRect(objeto.x + 0.5, objeto.y + 0.5, objeto.ancho - 1, objeto.alto - 1);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+    ctx.font = "10px monospace";
+    ctx.fillText(objeto.tipo, objeto.x + 5, objeto.y + 14, objeto.ancho - 10);
+}
+
+// Los objetos de fondo van detras del piso; los que tienen colision, delante
+function dibujarObjetos(camaraX, deFondo) {
+    const objetos = (pisoActivoConfig.objetos || [])
+        .filter((objeto) => (objeto.modo === MODOS_OBJETO.FONDO) === deFondo);
+    if (!objetos.length) return;
+
+    ctx.save();
+    ctx.translate(-camaraX, 0);
+    objetos.forEach(dibujarObjeto);
+    ctx.restore();
+}
+
 function dibujarEscenario(camaraX) {
     dibujarFondoParallax(camaraX);
     dibujarProps(camaraX);
+    dibujarObjetos(camaraX, true);
 }
