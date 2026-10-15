@@ -71,6 +71,22 @@ canvas {
 }
 
 /* index.html?prueba=1 dentro del iframe de admin.html */
+.opcion-colisiones {
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.opcion-colisiones kbd {
+    padding: 0 5px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    font-size: 11px;
+    opacity: 0.7;
+}
+
 body.modo-prueba h2,
 body.modo-prueba .controles {
     display: none;

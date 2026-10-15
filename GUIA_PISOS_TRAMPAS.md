@@ -349,6 +349,10 @@ colision: {
 - `offsetX`: separacion desde el borde izquierdo del sprite hasta la caja de colision.
 - `offsetY`: separacion desde arriba del sprite hasta la caja de colision.
 
+Para ver las dos cajas mientras juegas, aprieta `C` (o abre `index.html?colisiones`): el
+cuadro blanco punteado es el sprite (`render`) y el amarillo, la colision. Los pies del
+dibujo tienen que tocar la linea de abajo del cuadro amarillo.
+
 Si el personaje parece flotar, aumenta `offsetY` de `render`.
 Si parece hundido en el piso, baja `offsetY` de `render`.
 Si se cae aunque visualmente aun toca el borde, aumenta `colision.ancho`.

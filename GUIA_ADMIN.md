@@ -390,10 +390,43 @@ El boton **▶ Probar** abre el juego dentro del editor, en el piso activo y **c
 cambios actuales, aunque no esten guardados**.
 
 - Flechas para correr, `Espacio` para saltar.
+- `C` muestra u oculta las colisiones (ver abajo).
 - `Esc` o `✕` vuelve al editor.
 - **Reiniciar** vuelve a cargar el piso desde el comienzo.
 
 Probar no guarda nada y no modifica `niveles.js`.
+
+### Ver las colisiones
+
+Con la tecla `C` (o la casilla **Ver colisiones** del juego) se dibujan encima de todo las
+cajas con las que el juego calcula los choques. Sirve para comprobar que el dibujo coincide
+con lo que se pisa.
+
+| Borde | Que es |
+| --- | --- |
+| Amarillo, lleno | Caja de colision del jugador (`colision` en `personajes.js`). La linea gruesa de abajo son los pies. |
+| Rojo, dos marcas en los pies | El 40% del ancho: para apoyarse hay que pisar al menos esa parte. |
+| Blanco, punteado | El cuadro completo del sprite (`render` en `personajes.js`). |
+| Celeste, punteado | Plataforma. La linea gruesa de arriba es donde se pisa. |
+| Naranja | Pivote. Se apaga cuando ya se cayo y no sostiene. |
+| Verde | Objeto en modo Encima. |
+| Rosa | Objeto solido. |
+| Violeta, punteado | Objeto de fondo (no choca, se muestra para ubicarlo). |
+
+Arriba a la derecha aparece la posicion del jugador. Fuera del editor tambien se puede abrir
+el juego con las colisiones activadas: `index.html?colisiones`.
+
+Que mirar:
+
+- **Los pies del sprite tienen que tocar la linea de abajo del cuadro amarillo.** Si el
+  dibujo queda por encima, el personaje parece flotar; si queda por debajo, hundido. Se
+  corrige con `render.offsetY` en `personajes.js`.
+- **El cuadro amarillo tiene que cubrir el cuerpo**, no el aire del sprite. Si es mas ancho
+  que el personaje, choca antes de tocar las cosas. Se corrige con `colision.ancho` y
+  `colision.offsetX`.
+- **El borde de un objeto tiene que coincidir con el dibujo.** Si el PNG tiene aire
+  transparente, se ve el rectangulo mas grande que la imagen: recorta el PNG o ajusta su
+  tamano en el editor.
 
 ---
 

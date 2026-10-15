@@ -64,6 +64,18 @@ let estadosPlataformas = new Map();
 let ultimaPlataformaSolida = null;
 let superficiesObjetos = [];
 let framesTransicionRespawn = 0;
+// Modo de depuracion: dibuja las cajas de colision encima de todo. Tecla C o ?colisiones en la URL.
+let verColisiones = new URLSearchParams(window.location.search).has("colisiones");
+const COLORES_COLISION = {
+    jugador: "#ffe14d",
+    sprite: "rgba(255, 255, 255, 0.45)",
+    piso: "#4fd1ff",
+    pivote: "#ff9f43",
+    pivoteCaido: "rgba(255, 159, 67, 0.35)",
+    plataforma: "#7fd1a0",
+    solido: "#ff5fc8",
+    fondo: "rgba(185, 163, 245, 0.6)"
+};
 
 function inicializarEstadosPlataformas() {
     estadosPlataformas = new Map();
@@ -554,6 +566,107 @@ function dibujarPlataformas(ctx, nivelActual, camaraActualX) {
     ctx.restore();
 }
 
+function rectanguloColision(x, y, ancho, alto, color, { relleno = 0.12, punteado = false, etiqueta = "" } = {}) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = relleno;
+    ctx.fillRect(x, y, ancho, alto);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    if (punteado) ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x + 1, y + 1, ancho - 2, alto - 2);
+    if (etiqueta) {
+        ctx.setLineDash([]);
+        ctx.font = "10px monospace";
+        const anchoTexto = ctx.measureText(etiqueta).width + 6;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(x, y - 14, anchoTexto, 13);
+        ctx.fillStyle = color;
+        ctx.fillText(etiqueta, x + 3, y - 4);
+    }
+    ctx.restore();
+}
+
+// Lo que se pisa es siempre el borde de arriba: se marca con una linea gruesa
+function lineaSuperficie(x, y, ancho, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y - 2, ancho, 4);
+}
+
+function dibujarColisiones(anim, renderPersonaje, jugadorRenderX, jugadorRenderY) {
+    ctx.save();
+    ctx.translate(-camaraX, 0);
+
+    pisoActivoConfig.plataformas.forEach((plataforma, indice) => {
+        const esPivote = plataforma.tipo === TIPOS_PLATAFORMA.PIVOTE
+            && pisoActivoConfig.trampasHabilitadas.includes(TRAMPAS.PIVOTE);
+        const color = !esPivote
+            ? COLORES_COLISION.piso
+            : plataformaPermiteColision(plataforma, indice) ? COLORES_COLISION.pivote : COLORES_COLISION.pivoteCaido;
+        rectanguloColision(plataforma.x, plataforma.y, plataforma.ancho, TILE_PISO_ALTO, color, {
+            relleno: 0.06,
+            punteado: true,
+            etiqueta: `${indice + 1} ${esPivote ? "pivote " : ""}y=${plataforma.y}`
+        });
+        if (plataformaPermiteColision(plataforma, indice)) lineaSuperficie(plataforma.x, plataforma.y, plataforma.ancho, color);
+    });
+
+    (pisoActivoConfig.objetos || []).forEach((objeto) => {
+        const color = COLORES_COLISION[objeto.modo] || COLORES_COLISION.fondo;
+        const deFondo = objeto.modo === MODOS_OBJETO.FONDO;
+        rectanguloColision(objeto.x, objeto.y, objeto.ancho, objeto.alto, color, {
+            relleno: deFondo ? 0 : 0.18,
+            punteado: deFondo,
+            etiqueta: `${objeto.tipo} · ${objeto.modo}`
+        });
+        if (!deFondo) lineaSuperficie(objeto.x, objeto.y, objeto.ancho, color);
+    });
+
+    ctx.restore();
+
+    // Jugador: el cuadro blanco es el frame del sprite y el amarillo, la caja con la que choca
+    const jugadorEnPantallaX = jugador.x - camaraX;
+    const izquierda = jugadorEnPantallaX + obtenerOffsetColisionX();
+    const arriba = jugador.y + obtenerOffsetColisionY();
+    const ancho = obtenerAnchoJugador();
+    const alto = obtenerAlturaJugador();
+    rectanguloColision(jugadorRenderX, jugadorRenderY, renderPersonaje.ancho, renderPersonaje.alto, COLORES_COLISION.sprite, { relleno: 0, punteado: true });
+    rectanguloColision(izquierda, arriba, ancho, alto, COLORES_COLISION.jugador, {
+        relleno: 0.15,
+        etiqueta: `${configPersonaje.nombre} ${ancho}x${alto}${jugador.enElSuelo ? " · en el suelo" : ""}`
+    });
+    // Pies: para apoyarse hace falta pisar al menos el 40% del ancho
+    ctx.fillStyle = COLORES_COLISION.jugador;
+    ctx.fillRect(izquierda, arriba + alto - 2, ancho, 4);
+    ctx.fillStyle = "#ff4d4d";
+    ctx.fillRect(izquierda + ancho * 0.4 - 1, arriba + alto - 8, 2, 12);
+    ctx.fillRect(izquierda + ancho * 0.6 - 1, arriba + alto - 8, 2, 12);
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(canvas.width - 268, 18, 248, 22);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`COLISIONES · x ${Math.round(jugador.x)} y ${Math.round(jugador.y)} · C oculta`, canvas.width - 262, 33);
+}
+
+function inicializarVerColisiones() {
+    const casilla = document.getElementById("chkColisiones");
+    const fijar = (valor) => {
+        verColisiones = valor;
+        if (casilla) casilla.checked = valor;
+    };
+
+    fijar(verColisiones);
+    casilla?.addEventListener("change", (event) => {
+        fijar(event.target.checked);
+        event.target.blur();
+    });
+    window.addEventListener("keydown", (event) => {
+        if (event.code === "KeyC" && !event.repeat) fijar(!verColisiones);
+    });
+}
+
 function gameLoop(tiempoActual) {
     if (!configPersonaje || !configPersonaje.animaciones) {
         requestAnimationFrame(gameLoop);
@@ -722,6 +835,7 @@ function gameLoop(tiempoActual) {
     }
     ctx.restore();
 
+    if (verColisiones) dibujarColisiones(anim, renderPersonaje, jugadorRenderX, jugadorRenderY);
     dibujarHud();
     
     requestAnimationFrame(gameLoop);
@@ -730,6 +844,7 @@ function gameLoop(tiempoActual) {
 async function iniciarJuego() {
     try {
         inicializarSelectorPisos();
+        inicializarVerColisiones();
         inicializarEstadosPlataformas();
         await Promise.all([
             cargarSpritesPersonajes(),

@@ -23,8 +23,8 @@ const personajesDisponibles = {
         colision: {
             ancho: 64,
             alto: 172,
-            offsetX: 32,
-            offsetY: 9
+            offsetX: 44,
+            offsetY: 15
         },
         animaciones: {
             correr: { 
@@ -58,15 +58,15 @@ const personajesDisponibles = {
         fuerzaSalto: 12,
         vidaMaxima: 3,
         render: {
-            escala: 0.85,
+            escala: 1.1,
             offsetX: 0,
-            offsetY: 45
+            offsetY: 5
         },
         colision: {
-            ancho: 64,
+            ancho: 66,
             alto: 172,
-            offsetX: 32,
-            offsetY: 9
+            offsetX: 38,
+            offsetY: 20
         },
         animaciones: {
             correr: { 
