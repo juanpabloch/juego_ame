@@ -164,6 +164,7 @@
                         <datalist id="listaObjetos"></datalist>
                     </label>
                     <p id="ayudaObjeto" class="ayuda"></p>
+                    <p id="catalogoObjeto" class="ayuda"></p>
                     <div class="segmentado" id="segModo"></div>
                     <p id="ayudaModo" class="ayuda"></p>
                     <div class="fila-campos">
@@ -189,6 +190,57 @@
                     <div class="grupo-botones ancho-completo">
                         <button id="btnDuplicarObjeto" class="btn" title="Duplicar (⌘D)">Duplicar</button>
                         <button id="btnEliminarObjeto" class="btn btn-peligro" title="Eliminar (Supr)">Eliminar</button>
+                    </div>
+                    <p id="alcanceObjeto" class="ayuda"></p>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Catálogo de objetos <span id="totalCatalogo" class="conteo"></span></h2>
+                <p class="ayuda">Cada tipo se define una vez (imagen, tamaño, modo y caja de colisión) y se coloca en cualquier piso. Haz clic en uno para editarlo y colocarlo.</p>
+                <div id="listaCatalogo" class="lista-catalogo"></div>
+                <div class="grupo-botones ancho-completo">
+                    <button id="btnNuevoTipo" class="btn">+ Nuevo tipo</button>
+                </div>
+                <div id="panelTipo" hidden>
+                    <label class="campo">Archivo <span id="estadoTipo" class="estado-activo"></span>
+                        <input type="text" id="tipoId" spellcheck="false" placeholder="caja_sotano_01">
+                    </label>
+                    <p id="ayudaTipo" class="ayuda"></p>
+                    <label class="campo">Nombre
+                        <input type="text" id="tipoNombre" placeholder="Caja de cartón">
+                    </label>
+                    <div class="segmentado" id="segModoTipo"></div>
+                    <div class="fila-campos">
+                        <label class="campo">Ancho
+                            <input type="number" id="tipoAncho" step="1" min="16">
+                        </label>
+                        <label class="campo">Alto
+                            <input type="number" id="tipoAlto" step="1" min="16">
+                        </label>
+                    </div>
+                    <div class="campo">Márgenes de colisión (px)
+                        <div class="fila-campos">
+                            <label class="campo">Izquierda
+                                <input type="number" id="tipoMargenIzq" step="1" min="0">
+                            </label>
+                            <label class="campo">Derecha
+                                <input type="number" id="tipoMargenDer" step="1" min="0">
+                            </label>
+                            <label class="campo">Arriba
+                                <input type="number" id="tipoMargenArriba" step="1" min="0">
+                            </label>
+                        </div>
+                    </div>
+                    <p class="ayuda">Recortan la caja con la que choca el jugador, para no contar el borde transparente del PNG. La base siempre es la de la imagen.</p>
+                    <canvas id="vistaTipo" class="vista-tipo" width="248" height="150"></canvas>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnTamanoTipo" class="btn" title="Usar el tamaño real de la imagen">Tamaño de la imagen</button>
+                        <button id="btnAplicarTipo" class="btn" title="Poner este tamaño y modo en todos los objetos colocados de este tipo">Aplicar a todos</button>
+                    </div>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnDuplicarTipo" class="btn" title="Crear una variante (_02, _03…)">Variante</button>
+                        <button id="btnEliminarTipo" class="btn btn-peligro">Eliminar tipo</button>
                     </div>
                 </div>
             </section>

@@ -43,7 +43,7 @@ const MODOS_OBJETO = {
 };
 
 const TEMA_TILES_DEFAULT = "generico";
-const ALTURA_PLATAFORMA_DEFAULT = 560;
+const ALTURA_PLATAFORMA_DEFAULT = 600;
 
 function obtenerRutasTilesTema(tema = TEMA_TILES_DEFAULT) {
     return {
@@ -116,6 +116,58 @@ function obtenerRutaObjeto(tipo) {
 // x, y son la esquina superior izquierda. La imagen se estira a ancho x alto.
 function objeto(tipo, x, y, ancho, alto, modo = MODOS_OBJETO.FONDO) {
     return { tipo, x, y, ancho, alto, modo };
+}
+
+// Catalogo de objetos (CATALOGO_OBJETOS, en niveles.js): cada tipo se define una vez con su
+// imagen (id = nombre del PNG en assets/props), tamano, modo y margenes de colision.
+// margenes recorta la caja de colision respecto de la imagen, para el borde transparente del PNG.
+// Se miden en px sobre el tamano del catalogo y se escalan si el objeto se coloca mas grande o chico.
+function tipoObjeto(id, nombre, ancho, alto, modo = MODOS_OBJETO.SOLIDO, opciones = {}) {
+    const margenes = opciones.margenes || {};
+    return {
+        id,
+        nombre: nombre || id,
+        ancho,
+        alto,
+        modo,
+        margenes: {
+            izquierda: margenes.izquierda || 0,
+            derecha: margenes.derecha || 0,
+            arriba: margenes.arriba || 0
+        }
+    };
+}
+
+// El modo prueba del editor manda su catalogo sin guardar y reemplaza al de niveles.js
+let catalogoObjetosPrueba = null;
+
+function obtenerCatalogoObjetos() {
+    if (catalogoObjetosPrueba) return catalogoObjetosPrueba;
+    return typeof CATALOGO_OBJETOS !== "undefined" ? CATALOGO_OBJETOS : [];
+}
+
+function buscarTipoObjeto(id, catalogo = obtenerCatalogoObjetos()) {
+    return catalogo.find((tipo) => tipo.id === id) || null;
+}
+
+// Caja con la que choca el jugador. La base es siempre la de la imagen: el objeto apoya donde se ve.
+function cajaColisionObjeto(objeto, catalogo = obtenerCatalogoObjetos()) {
+    const tipo = buscarTipoObjeto(objeto.tipo, catalogo);
+    const m = tipo?.margenes;
+    if (!m || (!m.izquierda && !m.derecha && !m.arriba)) {
+        return { x: objeto.x, y: objeto.y, ancho: objeto.ancho, alto: objeto.alto };
+    }
+
+    const escalaX = objeto.ancho / (tipo.ancho || objeto.ancho);
+    const escalaY = objeto.alto / (tipo.alto || objeto.alto);
+    const izquierda = Math.round(m.izquierda * escalaX);
+    const arriba = Math.round(m.arriba * escalaY);
+    return {
+        x: objeto.x + izquierda,
+        y: objeto.y + arriba,
+        ancho: Math.max(1, objeto.ancho - izquierda - Math.round(m.derecha * escalaX)),
+        alto: Math.max(1, objeto.alto - arriba)
+    };
 }
 
 function obtenerPisoConfig(id) {

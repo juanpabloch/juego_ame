@@ -462,7 +462,9 @@ select:focus-visible {
     color: var(--texto-suave);
 }
 
-#panelPlataforma {
+#panelPlataforma,
+#panelObjeto,
+#panelTipo {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -726,4 +728,97 @@ input[type="checkbox"] {
     .pie-ayuda {
         display: none;
     }
+}
+
+/* Catalogo de objetos */
+
+.lista-catalogo {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 6px;
+}
+
+.lista-catalogo:empty::before {
+    content: "Todavía no hay tipos. Crea uno o, desde un objeto colocado, usa \"Agregar al catálogo\".";
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--texto-suave);
+}
+
+.tipo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    background: var(--panel-alto);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    color: var(--texto);
+    font: inherit;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.tipo-item:hover {
+    border-color: var(--borde-fuerte);
+}
+
+.tipo-item.activo {
+    background: var(--acento-suave);
+    border-color: rgba(79, 156, 249, 0.55);
+}
+
+.tipo-miniatura {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    height: 44px;
+}
+
+.tipo-miniatura img,
+.tipo-miniatura .tipo-caja {
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+}
+
+.tipo-miniatura .tipo-caja {
+    border: 1px dashed currentColor;
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+.tipo-miniatura .punto {
+    position: absolute;
+    top: 0;
+    right: 2px;
+}
+
+.tipo-titulo {
+    width: 100%;
+    font-size: 11px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tipo-dato {
+    font: 10px var(--mono);
+    color: var(--texto-suave);
+}
+
+.tipo-dato.falta {
+    color: var(--aviso);
+}
+
+.vista-tipo {
+    width: 100%;
+    height: auto;
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
 }

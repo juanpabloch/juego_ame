@@ -74,6 +74,8 @@
         indice: 0,
         seleccion: null,
         seleccionObjeto: null,
+        catalogo: [],
+        tipoCatalogo: null,
         ultimoObjeto: PROPS.CAJAS,
         ultimoModo: MODOS_OBJETO.FONDO,
         herramienta: "seleccionar",
@@ -117,6 +119,39 @@
     function objetoSeleccionado() {
         const piso = pisoActivo();
         return piso && estado.seleccionObjeto !== null ? piso.objetos[estado.seleccionObjeto] || null : null;
+    }
+
+    function tipoSeleccionado() {
+        return buscarTipoObjeto(estado.tipoCatalogo, estado.catalogo);
+    }
+
+    // Caja de colision del objeto segun el catalogo del editor (que puede no estar guardado)
+    function cajaObjeto(o) {
+        return cajaColisionObjeto(o, estado.catalogo);
+    }
+
+    function usosDeTipo(id) {
+        return estado.pisos.reduce((total, piso) => total + piso.objetos.filter((o) => o.tipo === id).length, 0);
+    }
+
+    // Nombre de archivo valido: minusculas, sin tildes, espacios como _ y solo letras, numeros y _
+    function normalizarId(texto) {
+        return String(texto || "").trim()
+            .replace(/^.*[\\/]/, "")
+            .replace(/\.png$/i, "")
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[\s-]+/g, "_")
+            .replace(/[^a-z0-9_]/g, "");
+    }
+
+    // caja_sotano_01 -> caja_sotano_02 (el primero libre)
+    function idLibre(base) {
+        const raiz = base.replace(/_\d+$/, "");
+        for (let n = 1; ; n++) {
+            const id = `${raiz}_${String(n).padStart(2, "0")}`;
+            if (!buscarTipoObjeto(id, estado.catalogo)) return id;
+        }
     }
 
     function limpiarSeleccion() {
@@ -189,6 +224,19 @@
         return piso;
     }
 
+    function importarTipo(crudo) {
+        const margenes = crudo.margenes || {};
+        const margen = (valor) => Math.max(0, Math.round(Number(valor)) || 0);
+        return {
+            id: String(crudo.id || ""),
+            nombre: String(crudo.nombre || crudo.id || ""),
+            ancho: Math.max(LADO_MINIMO_OBJETO, Number(crudo.ancho) || TAMANO_OBJETO),
+            alto: Math.max(LADO_MINIMO_OBJETO, Number(crudo.alto) || TAMANO_OBJETO),
+            modo: MODOS.some((modo) => modo.id === crudo.modo) ? crudo.modo : MODOS_OBJETO.SOLIDO,
+            margenes: { izquierda: margen(margenes.izquierda), derecha: margen(margenes.derecha), arriba: margen(margenes.arriba) }
+        };
+    }
+
     function exportarPlataformas(piso) {
         return piso.plataformas.map((p, i) => {
             const hueco = huecoDespues(piso.plataformas, i);
@@ -258,11 +306,25 @@
         return `    {\n${lineas.map((linea) => `        ${linea}`).join(",\n")}\n    }`;
     }
 
+    function codigoTipo(t) {
+        const m = t.margenes;
+        const margenes = [
+            m.izquierda && `izquierda: ${m.izquierda}`,
+            m.derecha && `derecha: ${m.derecha}`,
+            m.arriba && `arriba: ${m.arriba}`
+        ].filter(Boolean).join(", ");
+        return `    tipoObjeto(${JSON.stringify(t.id)}, ${JSON.stringify(t.nombre)}, ${t.ancho}, ${t.alto}, ${refEnum("MODOS_OBJETO", MODOS_OBJETO, t.modo)}${margenes ? `, { margenes: { ${margenes} } }` : ""})`;
+    }
+
     function generarArchivoNiveles() {
+        const catalogo = estado.catalogo.map(codigoTipo);
         return [
             "// Datos de los pisos. admin.html reescribe este archivo al guardar.",
-            "// Las constantes y funciones que usa (TIPOS_PISO, TRAMPAS, PROPS, piso, pisoConHueco, objeto, ...)",
+            "// Las constantes y funciones que usa (TIPOS_PISO, TRAMPAS, PROPS, piso, pisoConHueco, objeto, tipoObjeto, ...)",
             "// estan en niveles_base.js.",
+            "",
+            "// Catalogo de objetos: cada tipo es una imagen de assets/props con su tamano, modo y caja de colision.",
+            catalogo.length ? `const CATALOGO_OBJETOS = [\n${catalogo.join(",\n")}\n];` : "const CATALOGO_OBJETOS = [];",
             "",
             "const PISOS_CONFIG = [",
             estado.pisos.map(codigoPiso).join(",\n"),
@@ -369,11 +431,14 @@
             } else if (activo(obtenerRutaObjeto(o.tipo)).estado === "falta") {
                 agregar("info", `No existe ${obtenerRutaObjeto(o.tipo)}. El juego dibuja una caja de color en su lugar.`, { objeto: i });
             }
+            if (o.tipo && estado.catalogo.length && !buscarTipoObjeto(o.tipo, estado.catalogo)) {
+                agregar("info", `${nombre} no está en el catálogo. Funciona igual, pero sin márgenes de colisión ni tamaño de referencia.`, { objeto: i });
+            }
             if (o.modo === MODOS_OBJETO.FONDO) return;
 
             const suelo = pisoBajo(piso, o);
             if (suelo === null) return;
-            const desnivel = suelo - o.y;
+            const desnivel = suelo - cajaObjeto(o).y;
             const noLlegan = personajes.filter((personaje) => alturaSalto(personaje) < desnivel).map((personaje) => personaje.nombre);
             if (!noLlegan.length) return;
 
@@ -581,7 +646,14 @@
     // ------------------------------------------------- Historial y cambios
 
     function instantanea() {
-        return JSON.stringify({ pisos: estado.pisos, indice: estado.indice, seleccion: estado.seleccion, seleccionObjeto: estado.seleccionObjeto });
+        return JSON.stringify({
+            pisos: estado.pisos,
+            catalogo: estado.catalogo,
+            indice: estado.indice,
+            seleccion: estado.seleccion,
+            seleccionObjeto: estado.seleccionObjeto,
+            tipoCatalogo: estado.tipoCatalogo
+        });
     }
 
     function registrar() {
@@ -597,6 +669,8 @@
         estado.indice = Math.min(datos.indice, Math.max(0, estado.pisos.length - 1));
         estado.seleccion = datos.seleccion;
         estado.seleccionObjeto = datos.seleccionObjeto ?? null;
+        estado.catalogo = datos.catalogo || estado.catalogo;
+        estado.tipoCatalogo = datos.tipoCatalogo ?? null;
     }
 
     function deshacer() {
@@ -623,6 +697,12 @@
         alCambiar();
     }
 
+    function editarCatalogo(accion) {
+        registrar();
+        accion(tipoSeleccionado());
+        alCambiar();
+    }
+
     function firma(piso) {
         return codigoPiso(piso);
     }
@@ -640,6 +720,7 @@
         const piso = pisoActivo();
         if (!piso || !piso.plataformas[estado.seleccion]) estado.seleccion = null;
         if (!piso || !piso.objetos[estado.seleccionObjeto]) estado.seleccionObjeto = null;
+        if (!tipoSeleccionado()) estado.tipoCatalogo = null;
         validarTodo();
         pintarBarra();
         pintarLista();
@@ -659,7 +740,7 @@
             if (!$("bannerBorrador").hidden) return;
             try {
                 if (hayCambios()) {
-                    localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({ fecha: Date.now(), pisos: estado.pisos }));
+                    localStorage.setItem(CLAVE_BORRADOR, JSON.stringify({ fecha: Date.now(), pisos: estado.pisos, catalogo: estado.catalogo }));
                 } else {
                     localStorage.removeItem(CLAVE_BORRADOR);
                 }
@@ -678,10 +759,11 @@
         }
         if (!borrador?.pisos?.length) return;
 
-        const actuales = estado.pisos;
+        const actuales = { pisos: estado.pisos, catalogo: estado.catalogo };
         estado.pisos = borrador.pisos;
+        estado.catalogo = borrador.catalogo || estado.catalogo;
         const distinto = generarArchivoNiveles() !== contenidoBase;
-        estado.pisos = actuales;
+        Object.assign(estado, actuales);
         if (!distinto) {
             localStorage.removeItem(CLAVE_BORRADOR);
             return;
@@ -694,6 +776,7 @@
             registrar();
             estado.pisos = borrador.pisos;
             estado.pisos.forEach((piso) => { piso.objetos = piso.objetos || []; });
+            estado.catalogo = (borrador.catalogo || estado.catalogo).map(importarTipo);
             estado.indice = Math.min(estado.indice, estado.pisos.length - 1);
             limpiarSeleccion();
             contadorUid = Math.max(contadorUid, ...estado.pisos.map((piso) => Number(String(piso._uid).slice(1)) || 0));
@@ -857,8 +940,11 @@
             $("segModo").querySelectorAll("button").forEach((boton) => {
                 boton.classList.toggle("activo", boton.dataset.modo === objeto.modo);
             });
+            pintarCatalogoDeObjeto(piso, objeto);
         }
+        pintarCatalogo();
         ponerOpciones("listaObjetos", [...new Set([
+            ...estado.catalogo.map((t) => t.id),
             ...Object.values(PROPS),
             ...estado.pisos.flatMap((p) => (p.objetos || []).map((o) => o.tipo))
         ].filter(Boolean))].sort());
@@ -866,8 +952,153 @@
         document.querySelectorAll(".herramienta").forEach((boton) => {
             boton.classList.toggle("activa", boton.dataset.herramienta === estado.herramienta);
         });
-        $("pistaHerramienta").textContent = PISTAS[estado.herramienta];
+        $("pistaHerramienta").textContent = estado.herramienta === HERRAMIENTA_OBJETO
+            ? `${PISTAS.objeto} Colocando: ${estado.ultimoObjeto}${buscarTipoObjeto(estado.ultimoObjeto, estado.catalogo) ? " (del catálogo)" : ""}.`
+            : PISTAS[estado.herramienta];
         $("datoMundo").textContent = `${piso.plataformas.length} plataformas · ${piso.objetos.length} objetos · mundo ${anchoMundo(piso)}px (${(anchoMundo(piso) / ANCHO_PANTALLA).toFixed(1)} pantallas)`;
+    }
+
+    // Debajo del objeto: si es del catalogo y a que altura queda para cada personaje
+    function pintarCatalogoDeObjeto(piso, o) {
+        const tipo = buscarTipoObjeto(o.tipo, estado.catalogo);
+        const igual = tipo && tipo.ancho === o.ancho && tipo.alto === o.alto && tipo.modo === o.modo;
+        if (tipo) {
+            $("catalogoObjeto").replaceChildren(
+                `Catálogo: ${tipo.nombre} · ${tipo.ancho}×${tipo.alto} · ${MODOS.find((m) => m.id === tipo.modo)?.nombre}. `,
+                igual
+                    ? h("button", { class: "btn btn-mini", onclick: () => elegirTipo(tipo.id, false) }, "Editar tipo")
+                    : h("button", { class: "btn btn-mini", onclick: restablecerObjeto, title: "Volver al tamaño y modo del catálogo" }, "Restablecer")
+            );
+        } else {
+            $("catalogoObjeto").replaceChildren(
+                o.tipo ? "No está en el catálogo. " : "",
+                o.tipo && h("button", { class: "btn btn-mini", onclick: tipoDesdeObjeto }, "Agregar al catálogo")
+            );
+        }
+
+        const suelo = o.modo === MODOS_OBJETO.FONDO ? null : pisoBajo(piso, o);
+        if (suelo === null) {
+            $("alcanceObjeto").textContent = "";
+            return;
+        }
+        const desnivel = suelo - cajaObjeto(o).y;
+        const alcances = Object.values(personajesDisponibles)
+            .map((personaje) => `${personaje.nombre} ${alturaSalto(personaje) >= desnivel ? "✓" : "✕"}`);
+        $("alcanceObjeto").textContent = `Se pisa a ${desnivel}px sobre el piso · se sube de un salto: ${alcances.join(" · ")}`;
+    }
+
+    function miniaturaTipo(tipo) {
+        const modo = MODOS.find((m) => m.id === tipo.modo) || MODOS[0];
+        const imagen = activo(obtenerRutaObjeto(tipo.id));
+        const escala = Math.min(1, 44 / tipo.alto, 64 / tipo.ancho);
+        return h("span", { class: "tipo-miniatura" },
+            imagen.estado === "ok"
+                ? h("img", { src: imagen.img.src, alt: "" })
+                : h("span", { class: "tipo-caja", style: `color:${modo.color};width:${Math.round(tipo.ancho * escala)}px;height:${Math.round(tipo.alto * escala)}px` }),
+            h("i", { class: `punto modo-${tipo.modo}`, title: modo.nombre })
+        );
+    }
+
+    function pintarCatalogo() {
+        const lista = $("listaCatalogo");
+        const firmaLista = JSON.stringify([estado.catalogo, estado.tipoCatalogo, estado.catalogo.map((t) => [activo(obtenerRutaObjeto(t.id)).estado, usosDeTipo(t.id)])]);
+        if (lista.dataset.firma !== firmaLista) {
+            lista.dataset.firma = firmaLista;
+            lista.replaceChildren(...estado.catalogo.map((tipo) => {
+                const falta = activo(obtenerRutaObjeto(tipo.id)).estado === "falta";
+                const usos = usosDeTipo(tipo.id);
+                return h("button", {
+                    class: `tipo-item ${tipo.id === estado.tipoCatalogo ? "activo" : ""}`,
+                    title: `${tipo.id}.png · ${usos} ${usos === 1 ? "colocado" : "colocados"}${falta ? " · falta la imagen" : ""}`,
+                    onclick: () => elegirTipo(tipo.id)
+                },
+                    miniaturaTipo(tipo),
+                    h("span", { class: "tipo-titulo" }, tipo.nombre),
+                    h("span", { class: `tipo-dato ${falta ? "falta" : ""}` }, `${tipo.ancho}×${tipo.alto}${usos ? ` ·${usos}` : ""}`)
+                );
+            }));
+        }
+        $("totalCatalogo").textContent = estado.catalogo.length || "";
+
+        const tipo = tipoSeleccionado();
+        $("panelTipo").hidden = !tipo;
+        if (!tipo) return;
+        const imagen = activo(obtenerRutaObjeto(tipo.id));
+        poner("tipoId", tipo.id);
+        poner("tipoNombre", tipo.nombre);
+        poner("tipoAncho", tipo.ancho);
+        poner("tipoAlto", tipo.alto);
+        poner("tipoMargenIzq", tipo.margenes.izquierda);
+        poner("tipoMargenDer", tipo.margenes.derecha);
+        poner("tipoMargenArriba", tipo.margenes.arriba);
+        $("estadoTipo").textContent = { ok: "✓ existe", falta: "✕ no existe", cargando: "" }[imagen.estado];
+        $("estadoTipo").className = `estado-activo ${imagen.estado}`;
+        $("ayudaTipo").textContent = `${obtenerRutaObjeto(tipo.id)}${imagen.estado === "ok" ? ` · ${imagen.img.naturalWidth}×${imagen.img.naturalHeight}px` : " · se dibuja una caja de color hasta que exista"}. Formato: objeto_tema_NN.`;
+        $("btnTamanoTipo").disabled = imagen.estado !== "ok";
+        const usos = usosDeTipo(tipo.id);
+        $("btnAplicarTipo").disabled = !usos;
+        $("btnAplicarTipo").textContent = usos ? `Aplicar a todos (${usos})` : "Sin colocar";
+        $("segModoTipo").querySelectorAll("button").forEach((boton) => {
+            boton.classList.toggle("activo", boton.dataset.modo === tipo.modo);
+        });
+        dibujarVistaTipo(tipo, imagen);
+    }
+
+    // Vista previa: la imagen, la caja de colision recortada y a escala la altura de salto de cada personaje
+    function dibujarVistaTipo(tipo, imagen) {
+        const lienzoTipo = $("vistaTipo");
+        const c = lienzoTipo.getContext("2d");
+        const { width: ancho, height: alto } = lienzoTipo;
+        const suelo = alto - 14;
+        const saltos = Object.values(personajesDisponibles).map((personaje) => ({ nombre: personaje.nombre, altura: alturaSalto(personaje) }));
+        const escala = Math.min(1, (ancho - 70) / tipo.ancho, (suelo - 22) / Math.max(tipo.alto, ...saltos.map((s) => s.altura)));
+        const w = tipo.ancho * escala;
+        const hh = tipo.alto * escala;
+        const x = 12;
+        const y = suelo - hh;
+        const modo = MODOS.find((m) => m.id === tipo.modo) || MODOS[0];
+        const caja = cajaColisionObjeto({ tipo: tipo.id, x, y, ancho: w, alto: hh }, estado.catalogo);
+
+        c.clearRect(0, 0, ancho, alto);
+        c.fillStyle = "#363d49";
+        c.fillRect(0, suelo, ancho, 2);
+        if (imagen.estado === "ok") {
+            c.imageSmoothingEnabled = false;
+            c.drawImage(imagen.img, x, y, w, hh);
+        } else {
+            c.fillStyle = modo.color;
+            c.globalAlpha = 0.25;
+            c.fillRect(x, y, w, hh);
+            c.globalAlpha = 1;
+        }
+        c.strokeStyle = "rgba(255, 255, 255, 0.45)";
+        c.setLineDash([3, 3]);
+        c.strokeRect(x + 0.5, y + 0.5, w - 1, hh - 1);
+        c.setLineDash([]);
+        if (tipo.modo !== MODOS_OBJETO.FONDO) {
+            c.strokeStyle = modo.color;
+            c.lineWidth = 1.5;
+            c.strokeRect(caja.x + 0.5, caja.y + 0.5, caja.ancho - 1, caja.alto - 1);
+            c.fillStyle = modo.color;
+            c.fillRect(caja.x, caja.y, caja.ancho, 3);
+        }
+
+        c.font = `10px ${FUENTE_MONO}`;
+        saltos.forEach((salto) => {
+            const ys = suelo - salto.altura * escala;
+            const llega = tipo.modo === MODOS_OBJETO.FONDO || salto.altura >= tipo.alto - tipo.margenes.arriba;
+            c.strokeStyle = llega ? "#4cc38a" : "#f0616d";
+            c.setLineDash([2, 3]);
+            c.beginPath();
+            c.moveTo(x + w + 6, ys);
+            c.lineTo(ancho - 4, ys);
+            c.stroke();
+            c.setLineDash([]);
+            c.fillStyle = c.strokeStyle;
+            c.fillText(`${salto.nombre} ${salto.altura}`, x + w + 8, ys - 3);
+        });
+        c.fillStyle = "#8d95a3";
+        c.fillText(`${tipo.ancho}×${tipo.alto}`, x, alto - 2);
     }
 
     function pintarProblemas() {
@@ -1046,6 +1277,7 @@
         if (libre) return Math.round(base);
         const piso = pisoActivo();
         const cercano = [...piso.plataformas, ...piso.objetos.filter((otro) => otro !== o && otro.modo !== MODOS_OBJETO.FONDO)]
+            .map((apoyo) => (apoyo.modo ? cajaObjeto(apoyo) : apoyo))
             .filter((apoyo) => apoyo.x < o.x + o.ancho && apoyo.x + apoyo.ancho > o.x)
             .map((apoyo) => apoyo.y)
             .sort((a, b) => Math.abs(a - base) - Math.abs(b - base))[0];
@@ -1054,16 +1286,17 @@
 
     function crearObjeto(punto, libre) {
         const piso = pisoActivo();
+        const tipo = buscarTipoObjeto(estado.ultimoObjeto, estado.catalogo);
         const imagen = activo(obtenerRutaObjeto(estado.ultimoObjeto));
-        const ancho = imagen.estado === "ok" ? imagen.img.naturalWidth : TAMANO_OBJETO;
-        const alto = imagen.estado === "ok" ? imagen.img.naturalHeight : TAMANO_OBJETO;
+        const ancho = tipo ? tipo.ancho : imagen.estado === "ok" ? imagen.img.naturalWidth : TAMANO_OBJETO;
+        const alto = tipo ? tipo.alto : imagen.estado === "ok" ? imagen.img.naturalHeight : TAMANO_OBJETO;
         const nuevo = {
             tipo: estado.ultimoObjeto,
             x: Math.max(0, ajustarGrilla(punto.x - ancho / 2, libre)),
             y: 0,
             ancho,
             alto,
-            modo: estado.ultimoModo
+            modo: tipo ? tipo.modo : estado.ultimoModo
         };
         // Si el clic cae cerca del piso, el objeto queda apoyado en el
         nuevo.y = ajustarBase(nuevo, punto.y + alto / 2, libre, alto / 2 + 10 / vista.zoom) - alto;
@@ -1117,6 +1350,131 @@
             return;
         }
         editar(() => { objeto.y = suelo - objeto.alto; });
+    }
+
+    // ------------------------------------------------- Catalogo de objetos
+
+    // Cambia tamano y modo dejando fija la base y el centro: el objeto sigue apoyado donde estaba
+    function ajustarAlTipo(o, tipo) {
+        const base = o.y + o.alto;
+        const centro = o.x + o.ancho / 2;
+        o.ancho = tipo.ancho;
+        o.alto = tipo.alto;
+        o.modo = tipo.modo;
+        o.x = Math.max(0, Math.round(centro - o.ancho / 2));
+        o.y = base - o.alto;
+    }
+
+    function colocados(id) {
+        return estado.pisos.flatMap((piso) => piso.objetos.filter((o) => o.tipo === id));
+    }
+
+    // Elegir un tipo lo deja listo para colocar con la herramienta Objeto
+    function elegirTipo(id, armar = true) {
+        const tipo = buscarTipoObjeto(id, estado.catalogo);
+        if (!tipo) return;
+        estado.tipoCatalogo = id;
+        estado.ultimoObjeto = id;
+        estado.ultimoModo = tipo.modo;
+        if (armar) {
+            estado.herramienta = HERRAMIENTA_OBJETO;
+            limpiarSeleccion();
+        }
+        sincronizarInspector();
+        pedirRender();
+    }
+
+    function nuevoTipo(base = {}) {
+        const piso = pisoActivo();
+        const id = idLibre(base.id || `caja_${normalizarId(piso?.tilesTema) || TEMA_TILES_DEFAULT}`);
+        const tipo = importarTipo({ modo: MODOS_OBJETO.SOLIDO, ...base, id, nombre: base.nombre || id });
+        editarCatalogo(() => { estado.catalogo.push(tipo); });
+        elegirTipo(id);
+        $("tipoId").focus();
+        $("tipoId").select();
+    }
+
+    function tipoDesdeObjeto() {
+        const o = objetoSeleccionado();
+        if (!o?.tipo || buscarTipoObjeto(o.tipo, estado.catalogo)) return;
+        const id = normalizarId(o.tipo);
+        if (!id) return;
+        editarCatalogo(() => {
+            estado.catalogo.push(importarTipo({ id, nombre: id, ancho: o.ancho, alto: o.alto, modo: o.modo }));
+            // El nombre normalizado reemplaza al original en todos los pisos
+            if (id !== o.tipo) colocados(o.tipo).forEach((otro) => { otro.tipo = id; });
+        });
+        elegirTipo(id, false);
+        avisar(`${id} se agregó al catálogo.`);
+    }
+
+    function restablecerObjeto() {
+        const o = objetoSeleccionado();
+        const tipo = o && buscarTipoObjeto(o.tipo, estado.catalogo);
+        if (tipo) editar(() => ajustarAlTipo(o, tipo));
+    }
+
+    // Los objetos que seguian igual al tipo (no se les cambio el tamano o el modo) siguen al tipo
+    function editarTipo(cambiar) {
+        const tipo = tipoSeleccionado();
+        if (!tipo) return;
+        const antes = { ...tipo, margenes: { ...tipo.margenes } };
+        editarCatalogo(() => {
+            cambiar(tipo);
+            colocados(tipo.id).forEach((o) => {
+                if (o.ancho === antes.ancho && o.alto === antes.alto && o.modo === antes.modo) ajustarAlTipo(o, tipo);
+            });
+        });
+    }
+
+    function renombrarTipo(valor) {
+        const tipo = tipoSeleccionado();
+        const id = normalizarId(valor);
+        if (!tipo || !id || id === tipo.id) return;
+        if (buscarTipoObjeto(id, estado.catalogo)) {
+            avisar(`Ya hay un tipo llamado ${id}.`, "error");
+            return;
+        }
+        const anterior = tipo.id;
+        editarCatalogo(() => {
+            colocados(anterior).forEach((o) => { o.tipo = id; });
+            if (tipo.nombre === anterior) tipo.nombre = id;
+            tipo.id = id;
+        });
+        elegirTipo(id, false);
+    }
+
+    function aplicarTipoAColocados() {
+        const tipo = tipoSeleccionado();
+        if (!tipo) return;
+        const lista = colocados(tipo.id);
+        editarCatalogo(() => lista.forEach((o) => ajustarAlTipo(o, tipo)));
+        avisar(`${lista.length} ${lista.length === 1 ? "objeto actualizado" : "objetos actualizados"}.`);
+    }
+
+    function varianteTipo() {
+        const tipo = tipoSeleccionado();
+        if (tipo) nuevoTipo({ ...tipo, margenes: { ...tipo.margenes }, nombre: "" });
+    }
+
+    function eliminarTipo() {
+        const tipo = tipoSeleccionado();
+        if (!tipo) return;
+        const usos = usosDeTipo(tipo.id);
+        if (usos && !window.confirm(`${usos} ${usos === 1 ? "objeto usa" : "objetos usan"} ${tipo.id}. Seguirán en los pisos, pero sin catálogo. ¿Eliminar el tipo?`)) return;
+        editarCatalogo(() => { estado.catalogo.splice(estado.catalogo.indexOf(tipo), 1); });
+        estado.tipoCatalogo = null;
+        sincronizarInspector();
+    }
+
+    function tamanoImagenTipo() {
+        const tipo = tipoSeleccionado();
+        const imagen = tipo && activo(obtenerRutaObjeto(tipo.id));
+        if (imagen?.estado !== "ok") return;
+        editarTipo((t) => {
+            t.ancho = imagen.img.naturalWidth;
+            t.alto = imagen.img.naturalHeight;
+        });
     }
 
     // ---------------------------------------------------------------- Vista
@@ -1382,15 +1740,24 @@
             if (o.ancho * z > 50) etiqueta(o.tipo || "sin imagen", o.x + o.ancho / 2, o.y + o.alto / 2, modo.color);
         }
 
+        const caja = o.modo === MODOS_OBJETO.FONDO ? o : cajaObjeto(o);
+        const recortada = caja.x !== o.x || caja.y !== o.y || caja.ancho !== o.ancho || caja.alto !== o.alto;
         ctx.strokeStyle = modo.color;
         ctx.lineWidth = 1.5 / z;
-        if (o.modo === MODOS_OBJETO.FONDO) ctx.setLineDash([4 / z, 4 / z]);
-        ctx.strokeRect(o.x, o.y, o.ancho, o.alto);
+        // Con margenes, la imagen va en punteado y la caja de colision en trazo lleno
+        if (recortada) {
+            ctx.globalAlpha = 0.45;
+            ctx.setLineDash([3 / z, 3 / z]);
+            ctx.strokeRect(o.x, o.y, o.ancho, o.alto);
+            ctx.globalAlpha = 1;
+        }
+        ctx.setLineDash(o.modo === MODOS_OBJETO.FONDO ? [4 / z, 4 / z] : []);
+        ctx.strokeRect(caja.x, caja.y, caja.ancho, caja.alto);
         ctx.setLineDash([]);
         // La franja de arriba marca donde pisa el jugador
         if (o.modo !== MODOS_OBJETO.FONDO) {
             ctx.fillStyle = modo.color;
-            ctx.fillRect(o.x, o.y, o.ancho, 4 / z);
+            ctx.fillRect(caja.x, caja.y, caja.ancho, 4 / z);
         }
     }
 
@@ -2024,6 +2391,7 @@
         marco.contentWindow.postMessage({
             tipo: "juego_ame:cargar_pisos",
             pisos: estado.pisos.map(exportarPiso),
+            catalogo: JSON.parse(JSON.stringify(estado.catalogo)),
             idActivo: piso.id
         }, "*");
         marco.focus();
@@ -2108,14 +2476,48 @@
         ));
 
         // Acepta el nombre solo, con .png o con la ruta completa
+        // Si es un tipo del catalogo, toma su tamano y su modo
         enlazarCampoObjeto("objTipo", (o, valor) => {
             o.tipo = valor.trim().replace(/^.*[\\/]/, "").replace(/\.png$/i, "");
-            if (o.tipo) estado.ultimoObjeto = o.tipo;
+            if (!o.tipo) return;
+            estado.ultimoObjeto = o.tipo;
+            const tipo = buscarTipoObjeto(o.tipo, estado.catalogo);
+            if (tipo) {
+                ajustarAlTipo(o, tipo);
+                estado.tipoCatalogo = tipo.id;
+            }
         });
         enlazarCampoObjeto("objX", (o, valor) => { o.x = entero(valor, o.x, 0); });
         enlazarCampoObjeto("objY", (o, valor) => { o.y = entero(valor, o.y); });
         enlazarCampoObjeto("objAncho", (o, valor) => { o.ancho = entero(valor, o.ancho, LADO_MINIMO_OBJETO); });
         enlazarCampoObjeto("objAlto", (o, valor) => { o.alto = entero(valor, o.alto, LADO_MINIMO_OBJETO); });
+
+        $("segModoTipo").replaceChildren(...MODOS.map((modo) =>
+            h("button", {
+                "data-modo": modo.id,
+                title: modo.ayuda,
+                onclick: () => editarTipo((t) => { t.modo = modo.id; })
+            }, h("i", { class: `punto modo-${modo.id}` }), modo.nombre)
+        ));
+        const enlazarCampoTipo = (id, aplicar) => {
+            $(id).addEventListener("change", (evento) => {
+                if (!tipoSeleccionado()) return;
+                aplicar(evento.target.value);
+                sincronizarInspector();
+            });
+        };
+        enlazarCampoTipo("tipoId", renombrarTipo);
+        enlazarCampoTipo("tipoNombre", (valor) => editarCatalogo((t) => { t.nombre = valor.trim() || t.id; }));
+        enlazarCampoTipo("tipoAncho", (valor) => editarTipo((t) => { t.ancho = entero(valor, t.ancho, LADO_MINIMO_OBJETO); }));
+        enlazarCampoTipo("tipoAlto", (valor) => editarTipo((t) => { t.alto = entero(valor, t.alto, LADO_MINIMO_OBJETO); }));
+        [["tipoMargenIzq", "izquierda"], ["tipoMargenDer", "derecha"], ["tipoMargenArriba", "arriba"]].forEach(([id, lado]) => {
+            enlazarCampoTipo(id, (valor) => editarCatalogo((t) => { t.margenes[lado] = entero(valor, t.margenes[lado], 0); }));
+        });
+        $("btnNuevoTipo").addEventListener("click", () => nuevoTipo());
+        $("btnTamanoTipo").addEventListener("click", tamanoImagenTipo);
+        $("btnAplicarTipo").addEventListener("click", aplicarTipoAColocados);
+        $("btnDuplicarTipo").addEventListener("click", varianteTipo);
+        $("btnEliminarTipo").addEventListener("click", eliminarTipo);
 
         enlazarCampo("campoId", (piso, valor) => { piso.id = entero(valor, piso.id, 1); });
         enlazarCampo("campoNombre", (piso, valor) => { piso.nombre = valor.trim(); });
@@ -2215,6 +2617,7 @@
 
     function iniciar() {
         estado.pisos = PISOS_CONFIG.map(importarPiso);
+        estado.catalogo = obtenerCatalogoObjetos().map(importarTipo);
         fijarLineaBase();
         construirInterfaz();
         ajustarLienzo();

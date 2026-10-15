@@ -15,6 +15,9 @@ sin tocar codigo:
 - Con Objeto, un clic coloca un objeto (una imagen de `assets/props/`). En el panel "Objeto"
   se elige la imagen y si es de fondo, para saltar encima o solido. Con Seleccionar se mueve
   arrastrando y se le cambia el tamano desde la esquina superior derecha.
+- El panel "Catalogo de objetos" define cada tipo una vez (`caja_sotano_01`: imagen, tamano,
+  modo y margenes de colision) para colocarlo en cualquier piso. Se guarda en `niveles.js`
+  como `CATALOGO_OBJETOS`.
 - Un hueco es el espacio que queda entre dos plataformas. El editor lo mide y marca en rojo
   los que ningun personaje puede saltar.
 - El panel "Problemas" lista errores y avisos del piso (huecos imposibles, plataformas

@@ -252,7 +252,11 @@ de cada personaje para ese hueco.
 ## 9. Objetos
 
 Un objeto es una imagen suelta que se coloca en cualquier parte del piso. Puede ser
-decoracion o tener colision.
+decoracion o tener colision: cajas, escritorios, archivadores, estantes, cualquier cosa
+donde el jugador se pueda parar o que le corte el paso.
+
+Lo recomendable es definir cada objeto una vez en el **catalogo** (seccion 9.7) con su
+imagen, tamano, modo y caja de colision, y despues colocarlo en los pisos que quieras.
 
 ### 9.1 La imagen
 
@@ -260,9 +264,22 @@ decoracion o tener colision.
 assets/props/<nombre>.png
 ```
 
-PNG con fondo transparente, del tamano que quieras. El nombre es libre: minusculas, sin
-tildes ni espacios. Si el archivo no existe, el editor y el juego dibujan una caja de color
-con el nombre, asi se puede armar el piso antes de tener el arte.
+PNG con fondo transparente, del tamano que quieras. Si el archivo no existe, el editor y el
+juego dibujan una caja de color con el nombre, asi se puede armar el piso antes de tener el
+arte.
+
+Convencion de nombres: `<objeto>_<tema>_<NN>`, en minusculas, sin tildes ni espacios.
+
+| Archivo | Que es |
+| --- | --- |
+| `caja_sotano_01.png` | Caja chica del sotano |
+| `caja_sotano_02.png` | Otra caja del sotano (otro dibujo u otro tamano) |
+| `archivador_archivo_01.png` | Archivador del piso Archivo |
+| `estante_biblioteca_01.png` | Estante de la biblioteca |
+
+El tema es el mismo que el de los tiles del piso (`sotano`, `archivo`, `biblioteca`...).
+El numero distingue variantes. El catalogo arma solo los nombres: crea `caja_<tema>_01` y
+las variantes siguen con `_02`, `_03`...
 
 ### 9.2 Los tres modos
 
@@ -275,9 +292,10 @@ con el nombre, asi se puede armar el piso antes de tener el arte.
 Los objetos con colision tienen una franja gruesa en el borde de arriba: ahi pisa el
 jugador.
 
-La colision es **el rectangulo completo de la imagen**. Si el PNG tiene aire transparente
-arriba o a los lados, el jugador va a parecer que flota o que choca con nada. Recorta la
-imagen al ras del dibujo.
+La colision es el rectangulo de la imagen, menos los **margenes de colision** del tipo en
+el catalogo (seccion 9.7). Si el PNG tiene aire transparente arriba o a los lados y el
+objeto no tiene margenes, el jugador va a parecer que flota o que choca con nada: recorta la
+imagen al ras del dibujo o pon margenes.
 
 ### 9.3 Colocar un objeto
 
@@ -286,8 +304,12 @@ imagen al ras del dibujo.
    mas arriba, queda flotando donde hiciste clic.
 3. El editor vuelve solo a Seleccionar, con el objeto nuevo elegido.
 
-El objeto nuevo usa la ultima imagen y el ultimo modo que elegiste, para colocar varios
-iguales seguidos. Si la imagen existe, nace con su tamano real; si no, de 96x96.
+El objeto nuevo usa el ultimo tipo que elegiste. Si es un tipo del catalogo, nace con su
+tamano y su modo; si no, con el tamano real de la imagen (o 96x96 si no existe) y el ultimo
+modo usado. La pista de arriba del lienzo dice que se va a colocar.
+
+Para colocar un tipo del catalogo, haz clic en el en el panel **Catalogo de objetos**: queda
+elegida la herramienta Objeto con ese tipo.
 
 ### 9.4 Editar un objeto
 
@@ -308,12 +330,19 @@ debajo. `Alt` desactiva el iman.
 El panel **Objeto** muestra:
 
 - **Imagen:** el nombre del archivo, sin `.png`. Acepta tambien la ruta completa y la
-  limpia. Debajo aparece la ruta real y, si la imagen existe, su tamano.
+  limpia. Debajo aparece la ruta real y, si la imagen existe, su tamano. Si escribes el
+  nombre de un tipo del catalogo, el objeto toma su tamano y su modo.
+- **Catalogo:** de que tipo es. **Editar tipo** abre el tipo en el catalogo. Si al objeto
+  le cambiaste el tamano o el modo, aparece **Restablecer** para volver a los del catalogo.
+  Si el objeto no esta en el catalogo, **Agregar al catalogo** crea un tipo con su nombre,
+  tamano y modo.
 - **Modo:** Fondo, Encima o Solido.
 - **X, Y:** la esquina superior izquierda.
 - **Ancho, Alto:** tamano con que se dibuja y colisiona. La imagen se estira a ese tamano.
 - **Tamano original:** vuelve al tamano real del PNG.
 - **Apoyar en el piso:** baja el objeto hasta la plataforma que tiene debajo.
+- Abajo de todo, a cuantos px del piso queda la parte que se pisa y si Juan y Ame llegan de
+  un salto (`✓` / `✕`).
 
 ### 9.5 Que se selecciona al hacer clic
 
@@ -333,6 +362,58 @@ Medidas desde el piso hasta la parte de arriba del objeto:
 
 Un objeto **solido** mas alto que el salto de un personaje le corta el paso. El editor lo
 marca como aviso.
+
+Se puede armar una escalera apilando objetos: al mover uno encima de otro, la base se pega
+sola al borde de arriba del de abajo. Por ejemplo, una caja de 96px y encima otra de 96px:
+Ame sube a la primera y desde ahi a la segunda.
+
+### 9.7 Catalogo de objetos
+
+El catalogo es la lista de tipos de objeto del juego. Cada tipo se define una vez y se usa
+en cualquier piso, como un molde: si cambias el tipo, cambian los objetos colocados.
+
+El panel **Catalogo de objetos** (columna derecha, debajo del panel Objeto) muestra cada
+tipo con su miniatura, su nombre, su tamano y cuantos hay colocados. El punto de color de la
+esquina es el modo. Si el tamano se ve naranja, falta la imagen.
+
+| Para | Como |
+| --- | --- |
+| Crear un tipo | **+ Nuevo tipo**. Nace como `caja_<tema del piso>_01`, solido, de 96x96. |
+| Crear una variante | **Variante**: copia el tipo elegido con el numero siguiente (`_02`, `_03`...). Sirve para la misma caja en otra altura. |
+| Colocarlo | Clic en el tipo y despues clic en el lienzo |
+| Crear un tipo desde un objeto colocado | En el panel Objeto, **Agregar al catalogo** |
+| Eliminarlo | **Eliminar tipo**. Si hay objetos colocados, pregunta antes. Los objetos no se borran: quedan sin catalogo. |
+
+Campos de un tipo:
+
+- **Archivo:** nombre del PNG en `assets/props/`, sin `.png`. Se limpia solo: "Caja Grande
+  Sotano" queda `caja_grande_sotano`. Cambiarlo renombra tambien todos los objetos
+  colocados de ese tipo, en todos los pisos.
+- **Nombre:** como se ve en el catalogo ("Caja de carton"). Es solo para el editor.
+- **Modo:** Fondo, Encima o Solido.
+- **Ancho, Alto:** tamano con que se coloca. **Tamano de la imagen** usa el del PNG.
+- **Margenes de colision:** cuantos px se recorta la caja de colision por la izquierda, la
+  derecha y arriba. La base no se recorta: el objeto apoya donde se ve.
+
+Como funcionan los margenes. Si `caja_sotano_01.png` mide 96x96 pero el dibujo tiene 8px
+transparentes a cada lado y 12px arriba, pon margenes 8, 8 y 12. El jugador pisa la caja
+12px mas abajo del borde de la imagen y choca con el dibujo, no con el aire. Si un objeto se
+coloca mas grande o mas chico que el tipo, los margenes se escalan en proporcion.
+
+La **vista previa** dibuja el tipo con la imagen (punteado blanco), la caja de colision
+(trazo del color del modo) y la altura de salto de cada personaje. La linea queda verde si
+el personaje llega arriba y roja si no.
+
+Que pasa con los objetos colocados al editar un tipo:
+
+- Los que tienen **el mismo tamano y modo que el tipo** lo siguen: si cambias el alto de 96 a
+  128, crecen hacia arriba sin despegarse del piso.
+- Los que agrandaste o achicaste a mano se quedan como estan. **Aplicar a todos** los
+  iguala al tipo.
+- Los margenes se aplican siempre a todos, porque son del tipo y no del objeto.
+
+El catalogo se guarda en `niveles.js` junto con los pisos (capitulo 15) y entra en deshacer
+y en el borrador automatico como cualquier otro cambio.
 
 ---
 
@@ -504,6 +585,19 @@ En Windows, `Ctrl` reemplaza a `Cmd`.
 
 ## 15. Que escribe el editor en niveles.js
 
+Arriba de los pisos va el catalogo de objetos:
+
+```js
+const CATALOGO_OBJETOS = [
+    tipoObjeto("caja_sotano_01", "Caja de carton", 96, 96, MODOS_OBJETO.SOLIDO, { margenes: { izquierda: 8, derecha: 8, arriba: 12 } }),
+    tipoObjeto("caja_sotano_02", "Caja alta", 96, 160, MODOS_OBJETO.SOLIDO),
+    tipoObjeto("escritorio_archivo_01", "Escritorio", 160, 96, MODOS_OBJETO.PLATAFORMA)
+];
+```
+
+`tipoObjeto(archivo, nombre, ancho, alto, modo, { margenes })`. Los margenes que valen 0 no
+se escriben. Si no hay tipos se escribe `const CATALOGO_OBJETOS = [];`.
+
 Un piso guardado se ve asi:
 
 ```js
@@ -539,6 +633,7 @@ Como traduce cada cosa:
 | Resbaladizo | `pisoResbaladizo(...)` / `pisoResbaladizoConHueco(...)` |
 | Plataforma a otra altura | Se agrega `{ y: N }` al final |
 | Objeto | `objeto(nombre, x, y, ancho, alto, modo)` |
+| Tipo del catalogo | `tipoObjeto(archivo, nombre, ancho, alto, modo, { margenes })` |
 
 - La lista `objetos` solo se escribe si el piso tiene objetos.
 - El hueco se calcula solo, como el espacio hasta la plataforma siguiente.

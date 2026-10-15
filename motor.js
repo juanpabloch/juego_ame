@@ -90,7 +90,7 @@ function inicializarEstadosPlataformas() {
 
     superficiesObjetos = (pisoActivoConfig.objetos || [])
         .filter((objeto) => objeto.modo !== MODOS_OBJETO.FONDO)
-        .map((objeto) => ({ ...objeto, esObjeto: true }));
+        .map((objeto) => ({ ...objeto, ...cajaColisionObjeto(objeto), esObjeto: true, imagen: objeto }));
 
     ultimaPlataformaSolida = pisoActivoConfig.plataformas.find((plataforma) => plataforma.tipo !== TIPOS_PLATAFORMA.PIVOTE)
         || pisoActivoConfig.plataformas[0]
@@ -190,6 +190,7 @@ function inicializarModoPrueba() {
     window.addEventListener("message", (event) => {
         if (event.source !== window.parent || event.data?.tipo !== "juego_ame:cargar_pisos") return;
         PISOS_CONFIG.splice(0, PISOS_CONFIG.length, ...event.data.pisos);
+        if (event.data.catalogo) catalogoObjetosPrueba = event.data.catalogo;
         llenarSelectorPisos();
         activarPiso(event.data.idActivo);
     });
@@ -613,14 +614,25 @@ function dibujarColisiones(anim, renderPersonaje, jugadorRenderX, jugadorRenderY
     });
 
     (pisoActivoConfig.objetos || []).forEach((objeto) => {
-        const color = COLORES_COLISION[objeto.modo] || COLORES_COLISION.fondo;
-        const deFondo = objeto.modo === MODOS_OBJETO.FONDO;
-        rectanguloColision(objeto.x, objeto.y, objeto.ancho, objeto.alto, color, {
-            relleno: deFondo ? 0 : 0.18,
-            punteado: deFondo,
+        if (objeto.modo !== MODOS_OBJETO.FONDO) return;
+        rectanguloColision(objeto.x, objeto.y, objeto.ancho, objeto.alto, COLORES_COLISION.fondo, {
+            relleno: 0,
+            punteado: true,
             etiqueta: `${objeto.tipo} · ${objeto.modo}`
         });
-        if (!deFondo) lineaSuperficie(objeto.x, objeto.y, objeto.ancho, color);
+    });
+
+    // Con margenes de colision, la imagen va en punteado fino y la caja que choca en trazo lleno
+    superficiesObjetos.forEach((caja) => {
+        const color = COLORES_COLISION[caja.modo] || COLORES_COLISION.fondo;
+        const { imagen } = caja;
+        const recortada = imagen.x !== caja.x || imagen.y !== caja.y || imagen.ancho !== caja.ancho || imagen.alto !== caja.alto;
+        if (recortada) rectanguloColision(imagen.x, imagen.y, imagen.ancho, imagen.alto, COLORES_COLISION.sprite, { relleno: 0, punteado: true });
+        rectanguloColision(caja.x, caja.y, caja.ancho, caja.alto, color, {
+            relleno: 0.18,
+            etiqueta: `${caja.tipo} · ${caja.modo} · y=${caja.y}`
+        });
+        lineaSuperficie(caja.x, caja.y, caja.ancho, color);
     });
 
     ctx.restore();

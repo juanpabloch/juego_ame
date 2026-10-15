@@ -176,7 +176,7 @@ Todo en minusculas, sin tildes ni espacios, con `_` entre palabras.
 | Borde antes del hueco | `assets/tiles/borde_roto_der_<tema>.png` | `128x64` |
 | Borde despues del hueco | `assets/tiles/borde_roto_izq_<tema>.png` | `128x64` |
 | Trampa pivote | `assets/tiles/trampa_pivote_<tema>.png` | `128x64` |
-| Objeto | `assets/props/<nombre>.png` | libre |
+| Objeto | `assets/props/<objeto>_<tema>_<NN>.png` (`caja_sotano_01.png`) | libre |
 | Resbaladizo | no lleva archivo | - |
 | Hueco | no lleva archivo (se pinta un degradado negro) | - |
 
@@ -236,9 +236,13 @@ Un objeto es una imagen suelta que se coloca en cualquier parte del piso.
 assets/props/<nombre>.png
 ```
 
-PNG con fondo transparente, del tamano que quieras. El nombre es libre (minusculas, sin
-tildes ni espacios): `caja_grande.png`, `escritorio.png`, `lampara_techo.png`. Si el archivo
-no existe, el juego dibuja una caja de color con el nombre.
+PNG con fondo transparente, del tamano que quieras. Si el archivo no existe, el juego
+dibuja una caja de color con el nombre.
+
+Nombre: `<objeto>_<tema>_<NN>.png`, en minusculas, sin tildes ni espacios. Ejemplos:
+`caja_sotano_01.png`, `caja_sotano_02.png`, `archivador_archivo_01.png`,
+`estante_biblioteca_01.png`. El tema es el de los tiles del piso y el numero distingue
+variantes (otro dibujo u otra altura).
 
 ### Los tres modos
 
@@ -248,15 +252,43 @@ no existe, el juego dibuja una caja de color con el nombre.
 | `MODOS_OBJETO.PLATAFORMA` | Encima (verde) | El jugador se para encima. De costado y desde abajo lo atraviesa. |
 | `MODOS_OBJETO.SOLIDO` | Solido (rosa) | El jugador se para encima y ademas choca de costado y con la cabeza. |
 
-La colision es el rectangulo completo de la imagen: el jugador pisa en el borde de arriba.
-Si el PNG tiene aire transparente arriba o a los lados, el jugador va a parecer que flota o
-que choca con nada. Recorta la imagen al ras del dibujo.
+La colision es el rectangulo de la imagen: el jugador pisa en el borde de arriba. Si el PNG
+tiene aire transparente arriba o a los lados, recorta la imagen al ras del dibujo o ponle
+margenes de colision en el catalogo (ver abajo).
+
+### Catalogo de objetos
+
+Cada tipo de objeto se define una vez en `CATALOGO_OBJETOS` (en `niveles.js`, arriba de
+los pisos) y despues se coloca con `objeto(...)` en los pisos:
+
+```js
+const CATALOGO_OBJETOS = [
+    tipoObjeto("caja_sotano_01", "Caja de carton", 96, 96, MODOS_OBJETO.SOLIDO, { margenes: { izquierda: 8, derecha: 8, arriba: 12 } }),
+    tipoObjeto("caja_sotano_02", "Caja alta", 96, 160, MODOS_OBJETO.SOLIDO)
+];
+```
+
+```js
+tipoObjeto(archivo, nombre, ancho, alto, modo, { margenes: { izquierda, derecha, arriba } })
+```
+
+- `archivo`: nombre del PNG en `assets/props/`, sin `.png`. Es el mismo que se pone en
+  `objeto(...)`.
+- `ancho`, `alto`, `modo`: con que tamano y modo nace al colocarlo en el editor.
+- `margenes`: px que se recortan de la caja de colision respecto de la imagen. La base no se
+  recorta. Si el objeto se coloca mas grande o mas chico, se escalan en proporcion.
+
+En el editor se maneja desde el panel **Catalogo de objetos**. Esta explicado en
+`GUIA_ADMIN.md`, seccion 9.7. Un objeto que no esta en el catalogo funciona igual, pero sin
+margenes.
 
 ### En el editor (`admin.html`)
 
 1. Elige la herramienta **Objeto** (tecla `5`) y haz clic en el piso. Si el clic cae cerca
    del piso, el objeto queda apoyado.
-2. En el panel **Objeto** escribe el nombre de la imagen (sin `.png`) y elige el modo.
+2. En el panel **Objeto** escribe el nombre de la imagen (sin `.png`) y elige el modo. O
+   mejor: elige un tipo en el panel **Catalogo de objetos** y haz clic en el piso, que nace
+   con su tamano y modo.
 3. Con **Seleccionar**, arrastra el objeto para moverlo. El cuadrado blanco de la esquina
    superior derecha cambia el tamano (con Shift mantiene la proporcion).
 4. **Tamano original** usa el tamano real del PNG. **Apoyar en el piso** lo baja hasta la
