@@ -4,7 +4,7 @@
     "use strict";
 
     // Deben coincidir con motor.js y escenario.js
-    const ANCHO_PANTALLA = 1280;
+    const ANCHO_PANTALLA = 1366;
     const ALTO_MUNDO = 720;
     const ANCHO_TILE = 128;
     const ALTO_TILE = 64;
@@ -29,7 +29,28 @@
     const TIPOS = [
         { id: TIPOS_PLATAFORMA.NORMAL, nombre: "Normal", color: "#aab4c3", sinHueco: "piso", conHueco: "pisoConHueco" },
         { id: TIPOS_PLATAFORMA.PIVOTE, nombre: "Pivote", color: "#f59e42", sinHueco: "pivote", conHueco: "pivoteConHueco" },
-        { id: TIPOS_PLATAFORMA.RESBALADIZO, nombre: "Resbaladizo", color: "#5cc8e0", sinHueco: "pisoResbaladizo", conHueco: "pisoResbaladizoConHueco" }
+        { id: TIPOS_PLATAFORMA.RESBALADIZO, nombre: "Resbaladizo", color: "#5cc8e0", sinHueco: "pisoResbaladizo", conHueco: "pisoResbaladizoConHueco" },
+        { id: TIPOS_PLATAFORMA.QUEBRADIZO, nombre: "Quebradizo", color: "#d9822b", sinHueco: "pisoQuebradizo", conHueco: "pisoQuebradizoConHueco" },
+        { id: TIPOS_PLATAFORMA.MOVIL, nombre: "Móvil", color: "#5ce1e6", sinHueco: "plataformaMovil", conHueco: "plataformaMovil" },
+        { id: TIPOS_PLATAFORMA.CINTA, nombre: "Cinta", color: "#ffe14d", sinHueco: "cintaTransportadora", conHueco: "cintaTransportadora" },
+        { id: TIPOS_PLATAFORMA.REBOTE, nombre: "Rebote", color: "#ff3b5c", sinHueco: "plataformaRebote", conHueco: "plataformaRebote" }
+    ];
+    const TIPOS_TRAMPAS_UI = [
+        { id: TIPOS_TRAMPA_ACTIVA.PINCHOS, nombre: "Pinchos", color: "#f0616d", ancho: 88, alto: 26, ayuda: "Pinchos o cables eléctricos fijos en piso o techo." },
+        { id: TIPOS_TRAMPA_ACTIVA.VAPOR, nombre: "Vapor", color: "#fb923c", ancho: 48, alto: 130, ayuda: "Chorro de vapor o fuego con ciclo de aviso, disparo y pausa." },
+        { id: TIPOS_TRAMPA_ACTIVA.LASER, nombre: "Láser", color: "#ff3b5c", ancho: 130, alto: 24, ayuda: "Rayo láser con ciclo. Ponlo a media altura para pasar agachado." },
+        { id: TIPOS_TRAMPA_ACTIVA.APLASTADOR, nombre: "Aplastador", color: "#94a3b8", ancho: 72, alto: 84, ayuda: "Prensa pesada que baja de golpe desde arriba y vuelve a subir." },
+        { id: TIPOS_TRAMPA_ACTIVA.SIERRA, nombre: "Sierra", color: "#facc15", ancho: 52, alto: 52, ayuda: "Obstáculo móvil que patrulla de un lado a otro en X o Y." }
+    ];
+    const TIPOS_ITEMS_UI = [
+        { id: TIPOS_ITEM.VIDA, nombre: "Vida (+1 ♥)", color: "#ff4d6d" },
+        { id: TIPOS_ITEM.DOBLE_SALTO, nombre: "Doble Salto (2X ▲)", color: "#5ce1e6" },
+        { id: TIPOS_ITEM.TARJETA, nombre: "Tarjeta Acceso", color: "#fbbf24" }
+    ];
+    const TIPOS_INTERRUPTORES_UI = [
+        { id: TIPOS_INTERRUPTOR.BOTON_PISO, nombre: "Botón de piso" },
+        { id: TIPOS_INTERRUPTOR.PALANCA, nombre: "Palanca / Tablero" },
+        { id: TIPOS_INTERRUPTOR.VALVULA, nombre: "Válvula / Tubería" }
     ];
     const MODOS = [
         { id: MODOS_OBJETO.FONDO, nombre: "Fondo", color: "#b9a3f5", ayuda: "Solo se ve. El jugador pasa por delante." },
@@ -37,23 +58,31 @@
         { id: MODOS_OBJETO.SOLIDO, nombre: "Sólido", color: "#e879c5", ayuda: "El jugador se para encima y además choca de costado y desde abajo." }
     ];
     const HERRAMIENTA_OBJETO = "objeto";
+    const HERRAMIENTA_FLOTANTE = "flotante";
+    const HERRAMIENTA_TRAMPA = "trampa";
+    const HERRAMIENTA_ELEMENTO = "elemento";
     const TAMANO_OBJETO = 96;
     const LADO_MINIMO_OBJETO = 16;
     const HERRAMIENTA_HUECO = "hueco";
     const ANCHO_HUECO_NUEVO = 128;
     const COLOR_HUECO = "#f0616d";
     const PISTAS = {
-        seleccionar: "Seleccionar: haz clic en una plataforma para elegirla, arrástrala para moverla y arrastra sus bordes blancos para cambiarle el ancho. Arrastrar el fondo desplaza la vista.",
+        seleccionar: "Seleccionar: haz clic en cualquier plataforma, trampa, vida, poder, checkpoint, meta u objeto para editarlo, cambiar su imagen y arrastrarlo.",
         normal: "Piso: arrastra en horizontal para pintar piso normal. Rellena huecos y reemplaza las trampas que haya en ese tramo.",
         pivote: "Pivote: arrastra sobre el piso para convertir ese tramo en una trampa que se cae al pisarla.",
         resbaladizo: "Resbaladizo: arrastra sobre el piso para convertir ese tramo en piso resbaladizo.",
+        quebradizo: "Quebradizo: arrastra sobre el piso para crear un tramo que tiembla al pisarlo, se rompe y se regenera.",
         hueco: "Hueco: arrastra sobre el piso para abrir un hueco de ese ancho. Un clic abre uno de 128px.",
-        objeto: "Objeto: haz clic donde quieras colocarlo. Después elige su imagen y si es de fondo, para saltar encima o sólido."
+        flotante: "Aérea/Móvil: haz clic en el aire para colocar una plataforma flotante (puedes cambiarla a Móvil, Cinta o Rebote en el panel derecho).",
+        trampa: "Trampa: haz clic donde quieras para colocar la trampa elegida (pinchos, vapor, láser, aplastador o sierra) y asignarle imagen PNG.",
+        elemento: "Vida/Poder/Meta: haz clic donde quieras para colocar una Vida (+1 ♥), el Poder de Doble Salto (2X), una Tarjeta, un Checkpoint o el Ascensor Meta.",
+        objeto: "Objeto: haz clic donde quieras colocarlo. Después elige su imagen PNG y si es de fondo, para saltar encima o sólido."
     };
     const COLORES_SALTO = { ok: "#4cc38a", justo: "#f2b84b", parcial: "#f2b84b", imposible: "#f0616d" };
     const CLAVES_PISO = [
         "id", "nombre", "fondoRuta", "colorPlaceholder", "tipoPiso", "tilesTema",
-        "tilesVariantes", "trampasHabilitadas", "propsPermitidos", "objetos", "plataformas"
+        "tilesVariantes", "trampasHabilitadas", "propsPermitidos", "objetos", "plataformas",
+        "trampas", "interruptores", "checkpoints", "items", "meta"
     ];
 
     const $ = (id) => document.getElementById(id);
@@ -74,10 +103,15 @@
         indice: 0,
         seleccion: null,
         seleccionObjeto: null,
+        seleccionTrampa: null,
+        seleccionElemento: null, // { categoria: "checkpoint" | "item" | "interruptor" | "meta", indice: number }
         catalogo: [],
         tipoCatalogo: null,
         ultimoObjeto: PROPS.CAJAS,
         ultimoModo: MODOS_OBJETO.FONDO,
+        ultimaTrampa: TIPOS_TRAMPA_ACTIVA.PINCHOS,
+        ultimaCategoriaElemento: "item",
+        ultimoSubtipoItem: TIPOS_ITEM.VIDA,
         herramienta: "seleccionar",
         snap: 32,
         personaje: Object.keys(personajesDisponibles)[0],
@@ -101,6 +135,7 @@
     let revalidacionPendiente = false;
     let temporizadorBorrador = null;
     let campoEditando = null;
+    let callbackSelectorImagen = null;
 
     const lienzo = $("editorCanvas");
     const ctx = lienzo.getContext("2d");
@@ -121,8 +156,46 @@
         return piso && estado.seleccionObjeto !== null ? piso.objetos[estado.seleccionObjeto] || null : null;
     }
 
+    function trampaSeleccionada() {
+        const piso = pisoActivo();
+        return piso && estado.seleccionTrampa !== null ? (piso.trampas || [])[estado.seleccionTrampa] || null : null;
+    }
+
+    function elementoSeleccionado() {
+        const piso = pisoActivo();
+        const sel = estado.seleccionElemento;
+        if (!piso || !sel) return null;
+        const categoria = sel.categoria || sel.clase;
+        if (categoria === "checkpoint") {
+            const datos = (piso.checkpoints || [])[sel.indice];
+            return datos ? { categoria: "checkpoint", indice: sel.indice, datos } : null;
+        }
+        if (categoria === "item") {
+            const datos = (piso.items || [])[sel.indice];
+            return datos ? { categoria: "item", indice: sel.indice, datos } : null;
+        }
+        if (categoria === "interruptor") {
+            const datos = (piso.interruptores || [])[sel.indice];
+            return datos ? { categoria: "interruptor", indice: sel.indice, datos } : null;
+        }
+        if (categoria === "meta") {
+            return piso.meta ? { categoria: "meta", indice: 0, datos: piso.meta } : null;
+        }
+        return null;
+    }
+
     function tipoSeleccionado() {
         return buscarTipoObjeto(estado.tipoCatalogo, estado.catalogo);
+    }
+
+    function esPlataformaFlotante(p) {
+        if (!p) return false;
+        return Boolean(
+            p.flotante
+            || p.tipo === TIPOS_PLATAFORMA.MOVIL
+            || p.movil
+            || Math.abs((p.y ?? ALTURA_PLATAFORMA_DEFAULT) - ALTURA_PLATAFORMA_DEFAULT) >= ALTO_TILE
+        );
     }
 
     // Caja de colision del objeto segun el catalogo del editor (que puede no estar guardado)
@@ -157,29 +230,75 @@
     function limpiarSeleccion() {
         estado.seleccion = null;
         estado.seleccionObjeto = null;
+        estado.seleccionTrampa = null;
+        estado.seleccionElemento = null;
     }
 
     // ---------------------------------------------------------------- Modelo
 
     function ordenar(piso, mantener = null) {
-        piso.plataformas.sort((a, b) => a.x - b.x || a.y - b.y);
+        piso.plataformas.sort((a, b) => {
+            const fa = esPlataformaFlotante(a) ? 1 : 0;
+            const fb = esPlataformaFlotante(b) ? 1 : 0;
+            if (fa !== fb) return fa - fb;
+            return a.x - b.x || a.y - b.y;
+        });
         if (mantener) estado.seleccion = piso.plataformas.indexOf(mantener);
     }
 
-    // El hueco no se guarda en el editor: es el espacio hasta la plataforma siguiente.
+    function siguienteIndiceSuelo(plataformas, indice) {
+        const actual = plataformas[indice];
+        if (!actual || esPlataformaFlotante(actual)) return -1;
+        for (let j = indice + 1; j < plataformas.length; j++) {
+            if (!esPlataformaFlotante(plataformas[j])) return j;
+        }
+        return -1;
+    }
+
+    // El hueco solo se mide entre plataformas de suelo consecutivas (las flotantes no parten el piso)
     function huecoDespues(plataformas, indice) {
-        const siguiente = plataformas[indice + 1];
-        if (!siguiente) return 0;
+        const sigIdx = siguienteIndiceSuelo(plataformas, indice);
+        if (sigIdx === -1) return 0;
+        const siguiente = plataformas[sigIdx];
         return Math.max(0, siguiente.x - (plataformas[indice].x + plataformas[indice].ancho));
     }
 
     function anchoMundo(piso) {
-        return piso.plataformas.reduce((maximo, p) => Math.max(maximo, p.x + p.ancho), ANCHO_MUNDO_MINIMO);
+        const maxPlat = piso.plataformas.reduce((maximo, p) => Math.max(maximo, p.x + p.ancho), ANCHO_MUNDO_MINIMO);
+        const maxMeta = piso.meta ? piso.meta.x + (piso.meta.ancho || 88) + 80 : 0;
+        return Math.max(maxPlat, maxMeta);
+    }
+
+    function importarTrampa(t) {
+        const tipo = TIPOS_TRAMPAS_UI.some((d) => d.id === t.tipo) ? t.tipo : TIPOS_TRAMPA_ACTIVA.PINCHOS;
+        const def = TIPOS_TRAMPAS_UI.find((d) => d.id === tipo) || TIPOS_TRAMPAS_UI[0];
+        const obj = {
+            tipo,
+            x: Number(t.x) || 0,
+            y: Number.isFinite(t.y) ? Number(t.y) : ALTURA_PLATAFORMA_DEFAULT - def.alto,
+            ancho: Number(t.ancho) || def.ancho,
+            alto: Number(t.alto) || def.alto,
+            orientacion: t.orientacion || "horizontal",
+            intervaloMs: Number(t.intervaloMs) || 2200,
+            duracionMs: Number(t.duracionMs) || 1100,
+            avisoMs: Number(t.avisoMs) || 450,
+            rango: Number.isFinite(t.rango) ? Number(t.rango) : 110,
+            velocidad: Number(t.velocidad) || 2.2,
+            eje: t.eje === "y" ? "y" : "x"
+        };
+        if (t.canal) obj.canal = String(t.canal).trim();
+        if (t.imagen) obj.imagen = String(t.imagen);
+        return obj;
     }
 
     function importarPiso(crudo) {
         const piso = JSON.parse(JSON.stringify(crudo));
-        const originales = [...(crudo.plataformas || [])].sort((a, b) => a.x - b.x || a.y - b.y);
+        const originales = [...(crudo.plataformas || [])].sort((a, b) => {
+            const fa = (a.flotante || a.tipo === TIPOS_PLATAFORMA.MOVIL || a.movil || Math.abs((a.y ?? ALTURA_PLATAFORMA_DEFAULT) - ALTURA_PLATAFORMA_DEFAULT) >= ALTO_TILE) ? 1 : 0;
+            const fb = (b.flotante || b.tipo === TIPOS_PLATAFORMA.MOVIL || b.movil || Math.abs((b.y ?? ALTURA_PLATAFORMA_DEFAULT) - ALTURA_PLATAFORMA_DEFAULT) >= ALTO_TILE) ? 1 : 0;
+            if (fa !== fb) return fa - fb;
+            return a.x - b.x || a.y - b.y;
+        });
 
         piso._uid = crudo._uid || `p${++contadorUid}`;
         piso.id = Number(crudo.id);
@@ -191,30 +310,118 @@
         piso.tilesVariantes = Number(crudo.tilesVariantes) || 0;
         piso.trampasHabilitadas = [...(crudo.trampasHabilitadas || [])];
         piso.propsPermitidos = [...(crudo.propsPermitidos || [])];
-        piso.plataformas = originales.map((p) => ({
-            x: Number(p.x) || 0,
-            y: Number.isFinite(p.y) ? p.y : ALTURA_PLATAFORMA_DEFAULT,
-            ancho: Number(p.ancho) || ANCHO_TILE,
-            tipo: p.tipo || TIPOS_PLATAFORMA.NORMAL
-        }));
-        piso.objetos = (crudo.objetos || []).map((o) => ({
-            tipo: String(o.tipo || ""),
-            x: Number(o.x) || 0,
-            y: Number(o.y) || 0,
-            ancho: Number(o.ancho) || TAMANO_OBJETO,
-            alto: Number(o.alto) || TAMANO_OBJETO,
-            modo: MODOS.some((modo) => modo.id === o.modo) ? o.modo : MODOS_OBJETO.FONDO
-        }));
+        piso.plataformas = originales.map((p) => {
+            const y = Number.isFinite(p.y) ? p.y : ALTURA_PLATAFORMA_DEFAULT;
+            const tipo = p.tipo || TIPOS_PLATAFORMA.NORMAL;
+            const flotante = Boolean(p.flotante || tipo === TIPOS_PLATAFORMA.MOVIL || p.movil || Math.abs(y - ALTURA_PLATAFORMA_DEFAULT) >= ALTO_TILE);
+            const plat = {
+                x: Number(p.x) || 0,
+                y,
+                ancho: Number(p.ancho) || ANCHO_TILE,
+                tipo,
+                flotante
+            };
+            if (p.canal) plat.canal = String(p.canal).trim();
+            if (p.ocultaInicial) plat.ocultaInicial = Boolean(p.ocultaInicial);
+            if (tipo === TIPOS_PLATAFORMA.MOVIL || p.movil) {
+                plat.movil = {
+                    eje: p.movil?.eje === "y" ? "y" : "x",
+                    rango: Number(p.movil?.rango) || 140,
+                    velocidad: Number(p.movil?.velocidad) || 2.1
+                };
+            }
+            if (tipo === TIPOS_PLATAFORMA.CINTA || Number.isFinite(p.velocidadCinta)) {
+                plat.velocidadCinta = Number.isFinite(p.velocidadCinta) ? Number(p.velocidadCinta) : 2.6;
+            }
+            if (tipo === TIPOS_PLATAFORMA.REBOTE || Number.isFinite(p.fuerzaRebote)) {
+                plat.fuerzaRebote = Number.isFinite(p.fuerzaRebote) ? Number(p.fuerzaRebote) : -19.5;
+            }
+            return plat;
+        });
+        piso.objetos = (crudo.objetos || []).map((o) => {
+            const obj = {
+                tipo: String(o.tipo || ""),
+                x: Number(o.x) || 0,
+                y: Number(o.y) || 0,
+                ancho: Number(o.ancho) || TAMANO_OBJETO,
+                alto: Number(o.alto) || TAMANO_OBJETO,
+                modo: MODOS.some((modo) => modo.id === o.modo) ? o.modo : MODOS_OBJETO.FONDO
+            };
+            if (o.imagen) obj.imagen = String(o.imagen);
+            return obj;
+        });
+        const trampasCrudas = crudo.trampas || crudo.trampasActivas || [];
+        delete piso.trampasActivas;
+        piso.trampas = trampasCrudas.map(importarTrampa);
+        piso.interruptores = (crudo.interruptores || []).map((sw) => {
+            const estilo = sw.estilo || sw.tipo || "boton_piso";
+            const esBotonPiso = estilo === "boton_piso";
+            const modoCrudo = sw.modo || "activar";
+            const modo = modoCrudo === "permanente"
+                ? "activar"
+                : (modoCrudo === "temporal" || modoCrudo === "temporizado")
+                    ? "tiempo"
+                    : modoCrudo;
+            const obj = {
+                estilo,
+                tipo: estilo,
+                x: Number(sw.x) || 0,
+                y: Number.isFinite(sw.y) ? Number(sw.y) : ALTURA_PLATAFORMA_DEFAULT - (esBotonPiso ? 22 : 56),
+                ancho: Number(sw.ancho) || (esBotonPiso ? 52 : 44),
+                alto: Number(sw.alto) || (esBotonPiso ? 22 : 56),
+                canal: String(sw.canal || "A").trim(),
+                modo,
+                duracionMs: Number(sw.duracionMs) || 5000,
+                etiqueta: sw.etiqueta || String(sw.canal || "BOTON").toUpperCase()
+            };
+            if (sw.imagen) obj.imagen = String(sw.imagen);
+            return obj;
+        });
+        piso.checkpoints = (crudo.checkpoints || []).map((cp) => {
+            const obj = {
+                x: Number(cp.x) || 0,
+                y: Number.isFinite(cp.y) ? Number(cp.y) : ALTURA_PLATAFORMA_DEFAULT - 110,
+                ancho: Number(cp.ancho) || 48,
+                alto: Number(cp.alto) || 110,
+                nombre: cp.nombre || "Fichador"
+            };
+            if (cp.imagen) obj.imagen = String(cp.imagen);
+            return obj;
+        });
+        piso.items = (crudo.items || []).map((it) => {
+            const tipoRaw = it.tipo === TIPOS_ITEM.CAFE ? TIPOS_ITEM.VIDA : (it.tipo || TIPOS_ITEM.VIDA);
+            const tipo = TIPOS_ITEMS_UI.some((d) => d.id === tipoRaw) ? tipoRaw : TIPOS_ITEM.VIDA;
+            const obj = {
+                tipo,
+                x: Number(it.x) || 0,
+                y: Number.isFinite(it.y) ? Number(it.y) : ALTURA_PLATAFORMA_DEFAULT - 64,
+                ancho: Number(it.ancho) || 40,
+                alto: Number(it.alto) || 40
+            };
+            if (it.imagen) obj.imagen = String(it.imagen);
+            return obj;
+        });
+        piso.meta = crudo.meta ? {
+            x: Number(crudo.meta.x) || 0,
+            y: Number.isFinite(crudo.meta.y) ? Number(crudo.meta.y) : ALTURA_PLATAFORMA_DEFAULT - 144,
+            ancho: Number(crudo.meta.ancho) || 92,
+            alto: Number(crudo.meta.alto) || 144,
+            requiereLlave: crudo.meta.requiereLlave !== undefined ? Boolean(crudo.meta.requiereLlave) : true,
+            etiqueta: crudo.meta.etiqueta || "ASCENSOR",
+            ...(crudo.meta.imagen ? { imagen: String(crudo.meta.imagen) } : {})
+        } : null;
 
         if (!crudo._notas) {
             piso._notas = [];
             originales.forEach((p, i) => {
+                if (esPlataformaFlotante(piso.plataformas[i])) return;
                 const declarado = p.tieneHuecoDespues ? p.anchoHueco || 0 : 0;
                 const real = huecoDespues(piso.plataformas, i);
                 if (declarado === real) return;
+                const sigIdx = siguienteIndiceSuelo(piso.plataformas, i);
                 piso._notas.push({
                     plataforma: i,
-                    mensaje: i === originales.length - 1
+                    mensaje: sigIdx === -1
                         ? `niveles.js declara un hueco de ${declarado}px después de la última plataforma. No tiene nada del otro lado, así que se descarta.`
                         : `niveles.js declara un hueco de ${declarado}px después de la plataforma ${i + 1}, pero el espacio real hasta la siguiente es de ${real}px. El editor usa el espacio real.`
                 });
@@ -239,8 +446,33 @@
 
     function exportarPlataformas(piso) {
         return piso.plataformas.map((p, i) => {
-            const hueco = huecoDespues(piso.plataformas, i);
-            return { x: p.x, y: p.y, ancho: p.ancho, tipo: p.tipo, tieneHuecoDespues: hueco > 0, anchoHueco: hueco };
+            const flotante = esPlataformaFlotante(p);
+            const hueco = flotante ? 0 : huecoDespues(piso.plataformas, i);
+            const salida = {
+                x: p.x,
+                y: p.y,
+                ancho: p.ancho,
+                tipo: p.tipo,
+                tieneHuecoDespues: hueco > 0,
+                anchoHueco: hueco,
+                flotante
+            };
+            if (p.canal) salida.canal = p.canal;
+            if (p.ocultaInicial) salida.ocultaInicial = Boolean(p.ocultaInicial);
+            if (p.tipo === TIPOS_PLATAFORMA.MOVIL || p.movil) {
+                salida.movil = {
+                    eje: p.movil?.eje || "x",
+                    rango: Number(p.movil?.rango) || 140,
+                    velocidad: Number(p.movil?.velocidad) || 2.1
+                };
+            }
+            if (p.tipo === TIPOS_PLATAFORMA.CINTA || Number.isFinite(p.velocidadCinta)) {
+                salida.velocidadCinta = Number.isFinite(p.velocidadCinta) ? p.velocidadCinta : 2.6;
+            }
+            if (p.tipo === TIPOS_PLATAFORMA.REBOTE || Number.isFinite(p.fuerzaRebote)) {
+                salida.fuerzaRebote = Number.isFinite(p.fuerzaRebote) ? p.fuerzaRebote : 1.38;
+            }
+            return salida;
         });
     }
 
@@ -265,21 +497,128 @@
     }
 
     function codigoPlataforma(p) {
-        const tipo = TIPOS.find((t) => t.id === p.tipo);
-        const conAltura = p.y !== ALTURA_PLATAFORMA_DEFAULT;
+        const extrasCanal = [
+            p.canal && `canal: ${JSON.stringify(p.canal)}`,
+            p.ocultaInicial && `ocultaInicial: true`
+        ].filter(Boolean);
 
-        if (!tipo) {
-            const opciones = [
-                conAltura && `y: ${p.y}`,
-                p.tieneHuecoDespues && `tieneHuecoDespues: true, anchoHueco: ${p.anchoHueco}`
+        if (p.tipo === TIPOS_PLATAFORMA.MOVIL) {
+            const m = p.movil || { eje: "x", rango: 140, velocidad: 2.1 };
+            const optsMovil = [
+                `eje: ${JSON.stringify(m.eje)}`,
+                `rango: ${m.rango}`,
+                `velocidad: ${m.velocidad}`
+            ].join(", ");
+            const optsExtra = extrasCanal.join(", ");
+            return `plataformaMovil(${p.x}, ${p.y}, ${p.ancho}, { ${optsMovil} }${optsExtra ? `, { ${optsExtra} }` : ""})`;
+        }
+        if (p.tipo === TIPOS_PLATAFORMA.CINTA) {
+            const vel = Number.isFinite(p.velocidadCinta) ? p.velocidadCinta : 2.6;
+            const optsCinta = [
+                p.y !== ALTURA_PLATAFORMA_DEFAULT && `y: ${p.y}`,
+                p.tieneHuecoDespues && `tieneHuecoDespues: true, anchoHueco: ${p.anchoHueco}`,
+                p.flotante && `flotante: true`,
+                ...extrasCanal
             ].filter(Boolean).join(", ");
-            return `crearPlataforma(${p.x}, ${p.ancho}, ${JSON.stringify(p.tipo)}${opciones ? `, { ${opciones} }` : ""})`;
+            return `cintaTransportadora(${p.x}, ${p.ancho}, ${vel}${optsCinta ? `, { ${optsCinta} }` : ""})`;
+        }
+        if (p.tipo === TIPOS_PLATAFORMA.REBOTE) {
+            const fuerza = Number.isFinite(p.fuerzaRebote) && p.fuerzaRebote > 0 ? p.fuerzaRebote : 1.38;
+            const optsRebote = [
+                p.tieneHuecoDespues && `tieneHuecoDespues: true, anchoHueco: ${p.anchoHueco}`,
+                p.flotante && `flotante: true`,
+                ...extrasCanal
+            ].filter(Boolean).join(", ");
+            return `plataformaRebote(${p.x}, ${p.y}, ${p.ancho}, ${fuerza}${optsRebote ? `, { ${optsRebote} }` : ""})`;
+        }
+        if (p.flotante && p.tipo === TIPOS_PLATAFORMA.NORMAL) {
+            const optsFlot = extrasCanal.join(", ");
+            return `plataformaFlotante(${p.x}, ${p.y}, ${p.ancho}${optsFlot ? `, TIPOS_PLATAFORMA.NORMAL, { ${optsFlot} }` : ""})`;
         }
 
-        const opciones = conAltura ? `, { y: ${p.y} }` : "";
+        const tipo = TIPOS.find((t) => t.id === p.tipo);
+        const extrasOpciones = [
+            p.y !== ALTURA_PLATAFORMA_DEFAULT && `y: ${p.y}`,
+            p.flotante && `flotante: true`,
+            ...extrasCanal
+        ].filter(Boolean).join(", ");
+        const opciones = extrasOpciones ? `, { ${extrasOpciones} }` : "";
+
+        if (!tipo) {
+            const todas = [
+                extrasOpciones,
+                p.tieneHuecoDespues && `tieneHuecoDespues: true, anchoHueco: ${p.anchoHueco}`
+            ].filter(Boolean).join(", ");
+            return `crearPlataforma(${p.x}, ${p.ancho}, ${JSON.stringify(p.tipo)}${todas ? `, { ${todas} }` : ""})`;
+        }
+
         return p.tieneHuecoDespues
             ? `${tipo.conHueco}(${p.x}, ${p.ancho}, ${p.anchoHueco}${opciones})`
             : `${tipo.sinHueco}(${p.x}, ${p.ancho}${opciones})`;
+    }
+
+    function codigoTrampa(t) {
+        const opts = [
+            t.orientacion && t.orientacion !== "horizontal" && `orientacion: ${JSON.stringify(t.orientacion)}`,
+            t.intervaloMs && t.intervaloMs !== 2200 && `intervaloMs: ${t.intervaloMs}`,
+            t.duracionMs && t.duracionMs !== 1100 && `duracionMs: ${t.duracionMs}`,
+            t.avisoMs && t.avisoMs !== 450 && `avisoMs: ${t.avisoMs}`,
+            t.tipo === TIPOS_TRAMPA_ACTIVA.SIERRA && `eje: ${JSON.stringify(t.eje || "x")}, rango: ${t.rango ?? 110}, velocidad: ${t.velocidad || 2.2}`,
+            t.canal && `canal: ${JSON.stringify(t.canal)}`,
+            t.imagen && `imagen: ${JSON.stringify(t.imagen)}`
+        ].filter(Boolean).join(", ");
+        return `            trampa(${refEnum("TIPOS_TRAMPA_ACTIVA", TIPOS_TRAMPA_ACTIVA, t.tipo)}, ${t.x}, ${t.y}, ${t.ancho}, ${t.alto}${opts ? `, { ${opts} }` : ""})`;
+    }
+
+    function codigoInterruptor(sw) {
+        const estilo = sw.estilo || sw.tipo || "boton_piso";
+        const modo = sw.modo || "activar";
+        const opts = [
+            estilo !== "boton_piso" && `estilo: ${refEnum("TIPOS_INTERRUPTOR", TIPOS_INTERRUPTOR, estilo)}`,
+            sw.ancho && sw.ancho !== (estilo === "boton_piso" ? 52 : 44) && `ancho: ${sw.ancho}`,
+            sw.alto && sw.alto !== (estilo === "boton_piso" ? 22 : 56) && `alto: ${sw.alto}`,
+            modo !== "activar" && `modo: ${refEnum("MODOS_INTERRUPTOR", MODOS_INTERRUPTOR, modo)}`,
+            modo === "tiempo" && sw.duracionMs && `duracionMs: ${sw.duracionMs}`,
+            sw.etiqueta && sw.etiqueta !== String(sw.canal || "").toUpperCase() && `etiqueta: ${JSON.stringify(sw.etiqueta)}`,
+            sw.imagen && `imagen: ${JSON.stringify(sw.imagen)}`
+        ].filter(Boolean).join(", ");
+        return `            interruptor(${sw.x}, ${sw.y}, ${JSON.stringify(sw.canal || "A")}${opts ? `, { ${opts} }` : ""})`;
+    }
+
+    function codigoCheckpoint(cp) {
+        const opts = [
+            cp.ancho && cp.ancho !== 44 && `ancho: ${cp.ancho}`,
+            cp.alto && cp.alto !== 96 && `alto: ${cp.alto}`,
+            cp.nombre && cp.nombre !== "Fichador" && cp.nombre !== "Reloj Fichador" && `nombre: ${JSON.stringify(cp.nombre)}`,
+            cp.imagen && `imagen: ${JSON.stringify(cp.imagen)}`
+        ].filter(Boolean).join(", ");
+        return `            checkpoint(${cp.x}, ${cp.y}${opts ? `, { ${opts} }` : ""})`;
+    }
+
+    function codigoItem(it) {
+        const opts = [
+            it.ancho && it.ancho !== 40 && `ancho: ${it.ancho}`,
+            it.alto && it.alto !== 40 && `alto: ${it.alto}`,
+            it.imagen && `imagen: ${JSON.stringify(it.imagen)}`
+        ].filter(Boolean).join(", ");
+        return `            item(${refEnum("TIPOS_ITEM", TIPOS_ITEM, it.tipo)}, ${it.x}, ${it.y}${opts ? `, { ${opts} }` : ""})`;
+    }
+
+    function codigoMeta(m) {
+        if (!m) return "";
+        const opts = [
+            m.ancho && m.ancho !== 92 && `ancho: ${m.ancho}`,
+            m.alto && m.alto !== 144 && `alto: ${m.alto}`,
+            m.requiereLlave === false && `requiereLlave: false`,
+            m.etiqueta && m.etiqueta !== "ASCENSOR" && `etiqueta: ${JSON.stringify(m.etiqueta)}`,
+            m.imagen && `imagen: ${JSON.stringify(m.imagen)}`
+        ].filter(Boolean).join(", ");
+        return `meta: metaPiso(${m.x}, ${m.y}${opts ? `, { ${opts} }` : ""})`;
+    }
+
+    function codigoObjeto(o) {
+        const extra = o.imagen ? `, { imagen: ${JSON.stringify(o.imagen)} }` : "";
+        return `            objeto(${JSON.stringify(o.tipo)}, ${o.x}, ${o.y}, ${o.ancho}, ${o.alto}, ${refEnum("MODOS_OBJETO", MODOS_OBJETO, o.modo)}${extra})`;
     }
 
     function codigoPiso(piso) {
@@ -287,8 +626,13 @@
             .filter((clave) => !CLAVES_PISO.includes(clave) && !clave.startsWith("_"))
             .map((clave) => `${clave}: ${JSON.stringify(piso[clave])}`);
         const plataformas = exportarPlataformas(piso).map((p) => `            ${codigoPlataforma(p)}`);
-        const objetos = (piso.objetos || []).map((o) =>
-            `            objeto(${JSON.stringify(o.tipo)}, ${o.x}, ${o.y}, ${o.ancho}, ${o.alto}, ${refEnum("MODOS_OBJETO", MODOS_OBJETO, o.modo)})`);
+        const objetos = (piso.objetos || []).map(codigoObjeto);
+        const trampas = (piso.trampas || []).map(codigoTrampa);
+        const interruptores = (piso.interruptores || []).map(codigoInterruptor);
+        const checkpoints = (piso.checkpoints || []).map(codigoCheckpoint);
+        const items = (piso.items || []).map(codigoItem);
+        const metaLinea = piso.meta ? codigoMeta(piso.meta) : "";
+
         const lineas = [
             `id: ${piso.id}`,
             `nombre: ${JSON.stringify(piso.nombre)}`,
@@ -301,6 +645,11 @@
             `propsPermitidos: [${piso.propsPermitidos.map((p) => refEnum("PROPS", PROPS, p)).join(", ")}]`,
             ...extras,
             objetos.length && `objetos: [\n${objetos.join(",\n")}\n        ]`,
+            trampas.length && `trampas: [\n${trampas.join(",\n")}\n        ]`,
+            interruptores.length && `interruptores: [\n${interruptores.join(",\n")}\n        ]`,
+            checkpoints.length && `checkpoints: [\n${checkpoints.join(",\n")}\n        ]`,
+            items.length && `items: [\n${items.join(",\n")}\n        ]`,
+            metaLinea,
             plataformas.length ? `plataformas: [\n${plataformas.join(",\n")}\n        ]` : "plataformas: []"
         ].filter(Boolean);
         return `    {\n${lineas.map((linea) => `        ${linea}`).join(",\n")}\n    }`;
@@ -401,6 +750,14 @@
         return 0;
     }
 
+    function alcanceSaltoConDash(personaje, desnivel) {
+        const base = alcanceSalto(personaje, desnivel);
+        if (!base) return 0;
+        const velDash = personaje.velocidadDash || 13.5;
+        const framesDash = Math.round((personaje.duracionDashMs || 175) / 16.67);
+        return Math.floor(base + velDash * framesDash);
+    }
+
     function alturaSalto(personaje) {
         let velocidadY = -personaje.fuerzaSalto;
         let y = 0;
@@ -413,7 +770,7 @@
 
     // Altura de la plataforma que el objeto tiene debajo, o null si esta sobre un hueco
     function pisoBajo(piso, o) {
-        const centro = o.x + o.ancho / 2;
+        const centro = o.x + (o.ancho || 32) / 2;
         const debajo = piso.plataformas
             .filter((p) => centro >= p.x && centro <= p.x + p.ancho && p.y >= o.y)
             .sort((a, b) => a.y - b.y)[0];
@@ -425,13 +782,14 @@
         const altoMinimo = Math.min(...personajes.map((personaje) => personaje.colision?.alto || 172));
 
         piso.objetos.forEach((o, i) => {
-            const nombre = `El objeto ${i + 1} (${o.tipo || "sin imagen"})`;
-            if (!o.tipo) {
+            const rutaObj = obtenerRutaObjeto(o.tipo, o.imagen);
+            const nombre = `El objeto ${i + 1} (${o.imagen || o.tipo || "sin imagen"})`;
+            if (!rutaObj) {
                 agregar("aviso", `${nombre} no tiene imagen asignada.`, { objeto: i });
-            } else if (activo(obtenerRutaObjeto(o.tipo)).estado === "falta") {
-                agregar("info", `No existe ${obtenerRutaObjeto(o.tipo)}. El juego dibuja una caja de color en su lugar.`, { objeto: i });
+            } else if (activo(rutaObj).estado === "falta") {
+                agregar("info", `No existe ${rutaObj}. El juego dibuja una caja de color en su lugar.`, { objeto: i });
             }
-            if (o.tipo && estado.catalogo.length && !buscarTipoObjeto(o.tipo, estado.catalogo)) {
+            if (!o.imagen && o.tipo && estado.catalogo.length && !buscarTipoObjeto(o.tipo, estado.catalogo)) {
                 agregar("info", `${nombre} no está en el catálogo. Funciona igual, pero sin márgenes de colisión ni tamaño de referencia.`, { objeto: i });
             }
             if (o.modo === MODOS_OBJETO.FONDO) return;
@@ -455,42 +813,54 @@
 
     function analizarHueco(piso, indice) {
         const origen = piso.plataformas[indice];
-        const destino = piso.plataformas[indice + 1];
+        const sigIdx = siguienteIndiceSuelo(piso.plataformas, indice);
+        const destino = sigIdx !== -1 ? piso.plataformas[sigIdx] : origen;
         const ancho = huecoDespues(piso.plataformas, indice);
         const alcances = Object.entries(personajesDisponibles).map(([clave, personaje]) => ({
             clave,
             nombre: personaje.nombre,
-            alcance: alcanceSalto(personaje, destino.y - origen.y)
+            alcance: alcanceSalto(personaje, destino.y - origen.y),
+            alcanceDash: alcanceSaltoConDash(personaje, destino.y - origen.y)
         }));
         const minimo = Math.min(...alcances.map((a) => a.alcance));
         const maximo = Math.max(...alcances.map((a) => a.alcance));
+        const maximoDash = Math.max(...alcances.map((a) => a.alcanceDash));
 
         let resultado = "ok";
-        if (ancho > maximo) resultado = "imposible";
+        if (ancho > maximoDash) resultado = "imposible";
+        else if (ancho > maximo) resultado = "justo";
         else if (ancho > minimo) resultado = "parcial";
         else if (ancho > minimo * 0.9) resultado = "justo";
 
-        return { ancho, alcances, minimo, maximo, resultado };
+        return { ancho, alcances, minimo, maximo, maximoDash, resultado };
     }
 
     function desplazarDesde(piso, indice, delta) {
         piso.plataformas.slice(indice).forEach((p) => {
-            p.x = Math.max(0, p.x + delta);
+            if (!esPlataformaFlotante(p)) {
+                p.x = Math.max(0, p.x + delta);
+            }
         });
     }
 
     function alturaEn(punto) {
         const debajo = (pisoActivo()?.plataformas || [])
-            .filter((p) => punto.x >= p.x && punto.x <= p.x + p.ancho)
+            .filter((p) => !esPlataformaFlotante(p) && punto.x >= p.x && punto.x <= p.x + p.ancho)
             .sort((a, b) => Math.abs(a.y - punto.y) - Math.abs(b.y - punto.y))[0];
         return debajo ? debajo.y : ALTURA_PLATAFORMA_DEFAULT;
     }
 
-    // Une la plataforma con sus vecinas pegadas del mismo tipo. Los pivotes no: cada uno gira por separado.
+    // Une la plataforma con sus vecinas pegadas del mismo tipo. Los pivotes y plataformas especiales no se fusionan.
     function fusionar(piso, plataforma) {
-        if (plataforma.tipo === TIPOS_PLATAFORMA.PIVOTE) return;
+        if (
+            esPlataformaFlotante(plataforma)
+            || plataforma.tipo === TIPOS_PLATAFORMA.PIVOTE
+            || plataforma.tipo === TIPOS_PLATAFORMA.QUEBRADIZO
+            || plataforma.tipo === TIPOS_PLATAFORMA.MOVIL
+            || plataforma.tipo === TIPOS_PLATAFORMA.REBOTE
+        ) return;
         piso.plataformas = piso.plataformas.filter((otra) => {
-            if (otra === plataforma || otra.tipo !== plataforma.tipo || otra.y !== plataforma.y) return true;
+            if (otra === plataforma || esPlataformaFlotante(otra) || otra.tipo !== plataforma.tipo || otra.y !== plataforma.y) return true;
             if (otra.x + otra.ancho === plataforma.x) {
                 plataforma.x = otra.x;
                 plataforma.ancho += otra.ancho;
@@ -504,12 +874,12 @@
         });
     }
 
-    // Las herramientas pintan: lo que habia en el tramo se recorta y se reemplaza (o queda vacio si es un hueco)
+    // Las herramientas pintan sobre el suelo: lo que habia en el tramo se recorta y se reemplaza (o queda vacio si es un hueco)
     function pintarTramo(piso, desde, hasta, y, herramienta) {
         const resultado = [];
         piso.plataformas.forEach((p) => {
             const fin = p.x + p.ancho;
-            if (Math.abs(p.y - y) >= ALTO_TILE || fin <= desde || p.x >= hasta) {
+            if (esPlataformaFlotante(p) || Math.abs(p.y - y) >= ALTO_TILE || fin <= desde || p.x >= hasta) {
                 resultado.push(p);
                 return;
             }
@@ -521,12 +891,13 @@
         const trampa = {
             [HERRAMIENTA_HUECO]: TRAMPAS.HUECO_ROTO,
             [TIPOS_PLATAFORMA.PIVOTE]: TRAMPAS.PIVOTE,
-            [TIPOS_PLATAFORMA.RESBALADIZO]: TRAMPAS.RESBALADIZO
+            [TIPOS_PLATAFORMA.RESBALADIZO]: TRAMPAS.RESBALADIZO,
+            [TIPOS_PLATAFORMA.QUEBRADIZO]: TRAMPAS.QUEBRADIZO
         }[herramienta];
 
         let nueva = null;
         if (herramienta !== HERRAMIENTA_HUECO) {
-            nueva = { x: desde, y, ancho: hasta - desde, tipo: herramienta };
+            nueva = { x: desde, y, ancho: hasta - desde, tipo: herramienta, flotante: false };
             piso.plataformas.push(nueva);
             fusionar(piso, nueva);
         }
@@ -557,38 +928,41 @@
 
         plataformas.forEach((p, i) => {
             const fin = p.x + p.ancho;
-            if (p.ancho < ANCHO_TILE) {
+            if (!esPlataformaFlotante(p) && p.ancho < ANCHO_TILE) {
                 agregar("aviso", `La plataforma ${i + 1} mide ${p.ancho}px, menos que un tile (${ANCHO_TILE}px): el arte se va a ver comprimido.`, { plataforma: i });
             }
-            if (p.y < 190 || p.y > ALTO_MUNDO - ALTO_TILE) {
+            if (p.y < 140 || p.y > ALTO_MUNDO - ALTO_TILE) {
                 agregar("aviso", `La plataforma ${i + 1} está en y=${p.y}: el jugador o el piso quedan fuera de la pantalla (${ALTO_MUNDO}px de alto).`, { plataforma: i });
             }
 
-            for (let j = i + 1; j < plataformas.length && plataformas[j].x < fin; j++) {
-                if (Math.abs(plataformas[j].y - p.y) >= ALTO_TILE) continue;
-                const solape = fin - plataformas[j].x;
-                agregar("error", `Las plataformas ${i + 1} y ${j + 1} se superponen ${solape}px.`, {
-                    plataforma: j,
-                    arreglo: { etiqueta: "Separar", accion: () => desplazarDesde(piso, j, solape) }
-                });
+            if (!esPlataformaFlotante(p)) {
+                for (let j = i + 1; j < plataformas.length && plataformas[j].x < fin; j++) {
+                    if (esPlataformaFlotante(plataformas[j]) || Math.abs(plataformas[j].y - p.y) >= ALTO_TILE) continue;
+                    const solape = fin - plataformas[j].x;
+                    agregar("error", `Las plataformas ${i + 1} y ${j + 1} se superponen ${solape}px.`, {
+                        plataforma: j,
+                        arreglo: { etiqueta: "Separar", accion: () => desplazarDesde(piso, j, solape) }
+                    });
+                }
             }
 
-            if (huecoDespues(plataformas, i) === 0) return;
+            if (esPlataformaFlotante(p) || huecoDespues(plataformas, i) === 0) return;
             const hueco = analizarHueco(piso, i);
-            const detalle = hueco.alcances.map((a) => `${a.nombre} ${a.alcance}px`).join(", ");
+            const detalle = hueco.alcances.map((a) => `${a.nombre} ${a.alcance}px (Dash: ${a.alcanceDash}px)`).join(", ");
             const seguro = Math.floor((hueco.minimo * 0.85) / 16) * 16;
-            const arreglo = {
+            const sigIdx = siguienteIndiceSuelo(plataformas, i);
+            const arreglo = sigIdx !== -1 ? {
                 etiqueta: `Reducir a ${seguro}px`,
-                accion: () => desplazarDesde(piso, i + 1, seguro - hueco.ancho)
-            };
+                accion: () => desplazarDesde(piso, sigIdx, seguro - hueco.ancho)
+            } : null;
 
             if (hueco.resultado === "imposible") {
-                agregar("error", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: nadie llega (alcance: ${detalle}).`, { plataforma: i, arreglo });
+                agregar("error", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: requiere Poder de Doble Salto o plataforma aérea (${detalle}).`, { plataforma: i, arreglo });
             } else if (hueco.resultado === "parcial") {
                 const llegan = hueco.alcances.filter((a) => a.alcance >= hueco.ancho).map((a) => a.nombre).join(", ");
-                agregar("aviso", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: solo llega ${llegan} (alcance: ${detalle}).`, { plataforma: i, arreglo });
+                agregar("aviso", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: sin Dash solo llega ${llegan || "con Dash"} (${detalle}).`, { plataforma: i, arreglo });
             } else if (hueco.resultado === "justo") {
-                agregar("aviso", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: queda muy justo (alcance: ${detalle}).`, { plataforma: i });
+                agregar("info", `Hueco de ${hueco.ancho}px después de la plataforma ${i + 1}: requiere Salto + Dash aéreo o Doble Salto (${detalle}).`, { plataforma: i });
             }
         });
 
@@ -602,11 +976,18 @@
         if (usa(TIPOS_PLATAFORMA.RESBALADIZO) && !tiene(TRAMPAS.RESBALADIZO)) {
             agregar("info", "Hay piso resbaladizo pero la trampa RESBALADIZO no está en la lista.", { arreglo: habilitar(TRAMPAS.RESBALADIZO) });
         }
+        if (usa(TIPOS_PLATAFORMA.QUEBRADIZO) && !tiene(TRAMPAS.QUEBRADIZO)) {
+            agregar("info", "Hay piso quebradizo pero la trampa QUEBRADIZO no está en la lista.", { arreglo: habilitar(TRAMPAS.QUEBRADIZO) });
+        }
         if (hayHuecos && !tiene(TRAMPAS.HUECO_ROTO)) {
             agregar("info", "Hay huecos pero la trampa HUECO_ROTO no está en la lista.", { arreglo: habilitar(TRAMPAS.HUECO_ROTO) });
         }
         if (plataformas.length && anchoMundo(piso) < ANCHO_PANTALLA) {
             agregar("info", `El piso mide ${anchoMundo(piso)}px, menos que la pantalla (${ANCHO_PANTALLA}px).`);
+        }
+
+        if (piso.meta?.requiereLlave && !(piso.items || []).some((it) => it.tipo === TIPOS_ITEM.TARJETA) && (piso.items || []).length > 0) {
+            agregar("aviso", "El Ascensor Meta requiere Tarjeta de Acceso, pero pusiste items y ninguna Tarjeta en el piso.");
         }
 
         validarObjetos(piso, agregar);
@@ -652,6 +1033,8 @@
             indice: estado.indice,
             seleccion: estado.seleccion,
             seleccionObjeto: estado.seleccionObjeto,
+            seleccionTrampa: estado.seleccionTrampa,
+            seleccionElemento: estado.seleccionElemento,
             tipoCatalogo: estado.tipoCatalogo
         });
     }
@@ -669,6 +1052,8 @@
         estado.indice = Math.min(datos.indice, Math.max(0, estado.pisos.length - 1));
         estado.seleccion = datos.seleccion;
         estado.seleccionObjeto = datos.seleccionObjeto ?? null;
+        estado.seleccionTrampa = datos.seleccionTrampa ?? null;
+        estado.seleccionElemento = datos.seleccionElemento ?? null;
         estado.catalogo = datos.catalogo || estado.catalogo;
         estado.tipoCatalogo = datos.tipoCatalogo ?? null;
     }
@@ -720,6 +1105,8 @@
         const piso = pisoActivo();
         if (!piso || !piso.plataformas[estado.seleccion]) estado.seleccion = null;
         if (!piso || !piso.objetos[estado.seleccionObjeto]) estado.seleccionObjeto = null;
+        if (!piso || !(piso.trampas || [])[estado.seleccionTrampa]) estado.seleccionTrampa = null;
+        if (!elementoSeleccionado()) estado.seleccionElemento = null;
         if (!tipoSeleccionado()) estado.tipoCatalogo = null;
         validarTodo();
         pintarBarra();
@@ -775,7 +1162,14 @@
         $("btnRestaurarBorrador").onclick = () => {
             registrar();
             estado.pisos = borrador.pisos;
-            estado.pisos.forEach((piso) => { piso.objetos = piso.objetos || []; });
+            estado.pisos.forEach((piso) => {
+                piso.objetos = piso.objetos || [];
+                piso.trampas = (piso.trampas || piso.trampasActivas || []).map(importarTrampa);
+                delete piso.trampasActivas;
+                piso.checkpoints = piso.checkpoints || [];
+                piso.items = piso.items || [];
+                piso.meta = piso.meta || null;
+            });
             estado.catalogo = (borrador.catalogo || estado.catalogo).map(importarTipo);
             estado.indice = Math.min(estado.indice, estado.pisos.length - 1);
             limpiarSeleccion();
@@ -845,12 +1239,12 @@
 
     function poner(id, valor) {
         const campo = $(id);
-        if (campo !== campoEditando) campo.value = valor ?? "";
+        if (campo && campo !== campoEditando) campo.value = valor ?? "";
     }
 
     function ponerOpciones(id, valores) {
         const lista = $(id);
-        if (lista.dataset.valores === valores.join("|")) return;
+        if (!lista || lista.dataset.valores === valores.join("|")) return;
         lista.dataset.valores = valores.join("|");
         lista.replaceChildren(...valores.map((valor) => h("option", { value: valor })));
     }
@@ -898,43 +1292,61 @@
             chip.classList.toggle("activo", piso.propsPermitidos.includes(chip.dataset.valor));
         });
 
+        // 1. Plataforma seleccionada
         const plataforma = plataformaSeleccionada();
         $("panelPlataforma").hidden = !plataforma;
         $("vacioPlataforma").hidden = Boolean(plataforma);
         $("tituloPlataforma").textContent = plataforma ? `${estado.seleccion + 1} de ${piso.plataformas.length}` : "";
         if (plataforma) {
-            const esUltima = estado.seleccion === piso.plataformas.length - 1;
+            const flotante = esPlataformaFlotante(plataforma);
+            const sigIdx = siguienteIndiceSuelo(piso.plataformas, estado.seleccion);
+            const sinHueco = flotante || sigIdx === -1;
             poner("platX", plataforma.x);
             poner("platAncho", plataforma.ancho);
             poner("platY", plataforma.y);
             poner("platHueco", huecoDespues(piso.plataformas, estado.seleccion));
-            $("grupoHueco").hidden = esUltima;
-            $("ayudaHueco").hidden = esUltima;
-            if (!esUltima) {
+            $("platFlotante").checked = flotante;
+            $("grupoHueco").hidden = sinHueco;
+            $("ayudaHueco").hidden = sinHueco;
+            if (!sinHueco) {
                 const hueco = analizarHueco(piso, estado.seleccion);
-                $("ayudaHueco").textContent = `Alcance de salto: ${hueco.alcances.map((a) => `${a.nombre} ${a.alcance}px`).join(" · ")}. Cambiar el hueco mueve las plataformas que siguen.`;
+                $("ayudaHueco").textContent = `Alcance de salto: ${hueco.alcances.map((a) => `${a.nombre} ${a.alcance}px (Dash: ${a.alcanceDash}px)`).join(" · ")}. Cambiar el hueco mueve las plataformas de suelo que siguen.`;
             }
             $("segTipo").querySelectorAll("button").forEach((boton) => {
                 boton.classList.toggle("activo", boton.dataset.tipo === plataforma.tipo);
             });
+            $("grupoPlatMovil").hidden = plataforma.tipo !== TIPOS_PLATAFORMA.MOVIL;
+            $("grupoPlatCinta").hidden = plataforma.tipo !== TIPOS_PLATAFORMA.CINTA;
+            $("grupoPlatRebote").hidden = plataforma.tipo !== TIPOS_PLATAFORMA.REBOTE;
+            const movil = plataforma.movil || { eje: "x", rango: 140, velocidad: 2.1 };
+            poner("platMovilEje", movil.eje || "x");
+            poner("platMovilRango", movil.rango ?? 140);
+            poner("platMovilVel", movil.velocidad ?? 2.1);
+            poner("platVelocidadCinta", plataforma.velocidadCinta ?? 2.6);
+            poner("platFuerzaRebote", plataforma.fuerzaRebote ?? -19.5);
+            poner("platCanal", plataforma.canal || "");
+            if ($("platOcultaInicial")) $("platOcultaInicial").checked = Boolean(plataforma.ocultaInicial);
         }
 
+        // 2. Objeto decorativo / solido seleccionado
         const objeto = objetoSeleccionado();
         $("panelObjeto").hidden = !objeto;
         $("vacioObjeto").hidden = Boolean(objeto);
         $("tituloObjeto").textContent = objeto ? `${estado.seleccionObjeto + 1} de ${piso.objetos.length}` : "";
         if (objeto) {
-            const imagen = objeto.tipo ? activo(obtenerRutaObjeto(objeto.tipo)) : { estado: "falta" };
+            const rutaObj = obtenerRutaObjeto(objeto.tipo, objeto.imagen);
+            const imagen = rutaObj ? activo(rutaObj) : { estado: "falta" };
             poner("objTipo", objeto.tipo);
+            poner("objImagen", objeto.imagen || "");
             poner("objX", objeto.x);
             poner("objY", objeto.y);
             poner("objAncho", objeto.ancho);
             poner("objAlto", objeto.alto);
             $("estadoObjeto").textContent = { ok: "✓ existe", falta: "✕ no existe", cargando: "" }[imagen.estado];
             $("estadoObjeto").className = `estado-activo ${imagen.estado}`;
-            $("ayudaObjeto").textContent = objeto.tipo
-                ? `${obtenerRutaObjeto(objeto.tipo)}${imagen.estado === "ok" ? ` · ${imagen.img.naturalWidth}×${imagen.img.naturalHeight}px` : ""}`
-                : "Escribe el nombre del archivo de assets/props, sin .png.";
+            $("ayudaObjeto").textContent = rutaObj
+                ? `${rutaObj}${imagen.estado === "ok" ? ` · ${imagen.img.naturalWidth}×${imagen.img.naturalHeight}px` : ""}`
+                : "Escribe el nombre del archivo de assets/props o carga una ruta de imagen personalizada.";
             $("btnTamanoOriginal").disabled = imagen.estado !== "ok";
             $("ayudaModo").textContent = MODOS.find((modo) => modo.id === objeto.modo)?.ayuda || "";
             $("segModo").querySelectorAll("button").forEach((boton) => {
@@ -942,6 +1354,74 @@
             });
             pintarCatalogoDeObjeto(piso, objeto);
         }
+
+        // 3. Trampa activa seleccionada
+        const trampa = trampaSeleccionada();
+        $("panelTrampa").hidden = !trampa;
+        $("vacioTrampa").hidden = Boolean(trampa);
+        $("tituloTrampa").textContent = trampa ? `${estado.seleccionTrampa + 1} de ${(piso.trampas || []).length}` : "";
+        if (trampa) {
+            poner("trampaTipo", trampa.tipo);
+            poner("trampaImagen", trampa.imagen || "");
+            poner("trampaX", trampa.x);
+            poner("trampaY", trampa.y);
+            poner("trampaAncho", trampa.ancho);
+            poner("trampaAlto", trampa.alto);
+            poner("trampaOrientacion", trampa.orientacion || "horizontal");
+            poner("trampaIntervalo", trampa.intervaloMs ?? 2200);
+            poner("trampaDuracion", trampa.duracionMs ?? 1100);
+            poner("trampaAviso", trampa.avisoMs ?? 450);
+            poner("trampaEje", trampa.eje || "x");
+            poner("trampaRango", trampa.rango ?? 110);
+            poner("trampaVelocidad", trampa.velocidad ?? 2.2);
+            poner("trampaCanal", trampa.canal || "");
+            const usaCiclo = [TIPOS_TRAMPA_ACTIVA.VAPOR, TIPOS_TRAMPA_ACTIVA.LASER, TIPOS_TRAMPA_ACTIVA.APLASTADOR].includes(trampa.tipo);
+            $("grupoTrampaTiempos").hidden = !usaCiclo;
+            $("grupoTrampaMovimiento").hidden = trampa.tipo !== TIPOS_TRAMPA_ACTIVA.SIERRA;
+        }
+
+        // 4. Elemento de nivel (Item / Checkpoint / Interruptor / Meta)
+        const elem = elementoSeleccionado();
+        $("panelElemento").hidden = !elem;
+        $("vacioElemento").hidden = Boolean(elem);
+        $("tituloElemento").textContent = elem
+            ? { checkpoint: "Checkpoint", item: "Vida / Poder / Item", interruptor: "Botón / Interruptor", meta: "Ascensor Meta" }[elem.categoria]
+            : "";
+        if (elem) {
+            poner("elemCategoria", elem.categoria);
+            poner("elemImagen", elem.datos.imagen || "");
+            poner("elemX", elem.datos.x);
+            poner("elemY", elem.datos.y);
+            poner("elemAncho", elem.datos.ancho || (elem.categoria === "checkpoint" ? 48 : elem.categoria === "meta" ? 92 : elem.categoria === "interruptor" ? 56 : 40));
+            poner("elemAlto", elem.datos.alto || (elem.categoria === "checkpoint" ? 110 : elem.categoria === "meta" ? 144 : elem.categoria === "interruptor" ? 20 : 40));
+            $("grupoElemSubtipo").hidden = elem.categoria !== "item" && elem.categoria !== "interruptor";
+            $("grupoElemEtiqueta").hidden = elem.categoria === "item";
+            $("grupoElemLlave").hidden = elem.categoria !== "meta";
+            if ($("grupoElemInterruptor")) $("grupoElemInterruptor").hidden = elem.categoria !== "interruptor";
+            if (elem.categoria === "item") {
+                $("elemSubtipo")?.replaceChildren(...TIPOS_ITEMS_UI.map((it) =>
+                    h("option", { value: it.id }, it.nombre)
+                ));
+                poner("elemSubtipo", elem.datos.tipo || TIPOS_ITEM.VIDA);
+            } else if (elem.categoria === "interruptor") {
+                $("elemSubtipo")?.replaceChildren(...TIPOS_INTERRUPTORES_UI.map((sw) =>
+                    h("option", { value: sw.id }, sw.nombre)
+                ));
+                poner("elemSubtipo", elem.datos.estilo || elem.datos.tipo || TIPOS_INTERRUPTOR.BOTON_PISO);
+                poner("elemEtiqueta", elem.datos.etiqueta || "CANAL A");
+            } else {
+                poner("elemEtiqueta", elem.datos.etiqueta || (elem.categoria === "meta" ? "ASCENSOR" : "CP"));
+            }
+            if (elem.categoria === "interruptor") {
+                poner("elemCanal", elem.datos.canal || "A");
+                poner("elemModoInterruptor", elem.datos.modo || "activar");
+                poner("elemDuracionInterruptor", elem.datos.duracionMs ?? 5000);
+            }
+            if (elem.categoria === "meta") {
+                $("elemRequiereLlave").checked = elem.datos.requiereLlave !== false;
+            }
+        }
+
         pintarCatalogo();
         ponerOpciones("listaObjetos", [...new Set([
             ...estado.catalogo.map((t) => t.id),
@@ -954,8 +1434,15 @@
         });
         $("pistaHerramienta").textContent = estado.herramienta === HERRAMIENTA_OBJETO
             ? `${PISTAS.objeto} Colocando: ${estado.ultimoObjeto}${buscarTipoObjeto(estado.ultimoObjeto, estado.catalogo) ? " (del catálogo)" : ""}.`
-            : PISTAS[estado.herramienta];
-        $("datoMundo").textContent = `${piso.plataformas.length} plataformas · ${piso.objetos.length} objetos · mundo ${anchoMundo(piso)}px (${(anchoMundo(piso) / ANCHO_PANTALLA).toFixed(1)} pantallas)`;
+            : estado.herramienta === HERRAMIENTA_TRAMPA
+            ? `${PISTAS.trampa} Tipo activo: ${TIPOS_TRAMPAS_UI.find((t) => t.id === estado.ultimaTrampa)?.nombre || estado.ultimaTrampa}.`
+            : estado.herramienta === HERRAMIENTA_ELEMENTO
+            ? `${PISTAS.elemento} Colocando: ${estado.ultimaCategoriaElemento === "item" ? (TIPOS_ITEMS_UI.find((i) => i.id === estado.ultimoSubtipoItem)?.nombre || estado.ultimoSubtipoItem) : estado.ultimaCategoriaElemento}.`
+            : PISTAS[estado.herramienta] || "";
+
+        const nTrampas = (piso.trampas || []).length;
+        const nElem = (piso.checkpoints || []).length + (piso.items || []).length + (piso.interruptores || []).length + (piso.meta ? 1 : 0);
+        $("datoMundo").textContent = `${piso.plataformas.length} plat · ${piso.objetos.length} obj · ${nTrampas} trampas · ${nElem} elem · ${anchoMundo(piso)}px (${(anchoMundo(piso) / ANCHO_PANTALLA).toFixed(1)} pant)`;
     }
 
     // Debajo del objeto: si es del catalogo y a que altura queda para cada personaje
@@ -1149,8 +1636,8 @@
     }
 
     function seleccionar(indice) {
+        limpiarSeleccion();
         estado.seleccion = indice;
-        estado.seleccionObjeto = null;
         sincronizarInspector();
         pedirRender();
     }
@@ -1164,7 +1651,7 @@
     }
 
     function seleccionarObjeto(indice) {
-        estado.seleccion = null;
+        limpiarSeleccion();
         estado.seleccionObjeto = indice;
         sincronizarInspector();
         pedirRender();
@@ -1176,6 +1663,20 @@
         vista.x = objeto.x + objeto.ancho / 2 - anchoVisible() / 2;
         limitarVista();
         seleccionarObjeto(indice);
+    }
+
+    function seleccionarTrampa(indice) {
+        limpiarSeleccion();
+        estado.seleccionTrampa = indice;
+        sincronizarInspector();
+        pedirRender();
+    }
+
+    function seleccionarElemento(ref) {
+        limpiarSeleccion();
+        estado.seleccionElemento = ref;
+        sincronizarInspector();
+        pedirRender();
     }
 
     // ------------------------------------------------------ Acciones de piso
@@ -1245,7 +1746,10 @@
         const original = plataformaSeleccionada();
         if (!original) return;
         const piso = pisoActivo();
-        const copia = { ...original, x: anchoMundoReal(piso) + estado.snap * 4 };
+        const copia = {
+            ...JSON.parse(JSON.stringify(original)),
+            x: esPlataformaFlotante(original) ? original.x + original.ancho + estado.snap * 2 : anchoMundoReal(piso) + estado.snap * 4
+        };
         registrar();
         piso.plataformas.push(copia);
         ordenar(piso, copia);
@@ -1264,6 +1768,246 @@
         pisoActivo().plataformas.splice(indice, 1);
         limpiarSeleccion();
         alCambiar();
+    }
+
+    // --------------------------------------------------- Acciones de trampa y elemento
+
+    function crearPlataformaFlotante(punto, libre) {
+        const piso = pisoActivo();
+        const ancho = 160;
+        const nueva = {
+            x: Math.max(0, ajustarGrilla(punto.x - ancho / 2, libre)),
+            y: Math.max(140, Math.min(ALTURA_PLATAFORMA_DEFAULT - 64, ajustarGrilla(punto.y - 16, libre))),
+            ancho,
+            tipo: TIPOS_PLATAFORMA.NORMAL,
+            flotante: true,
+            movil: { eje: "x", rango: 140, velocidad: 2.1 },
+            velocidadCinta: 2.6,
+            fuerzaRebote: -19.5
+        };
+        registrar();
+        piso.plataformas.push(nueva);
+        ordenar(piso, nueva);
+        estado.herramienta = "seleccionar";
+        alCambiar();
+    }
+
+    function crearTrampa(punto, libre) {
+        const piso = pisoActivo();
+        const def = TIPOS_TRAMPAS_UI.find((t) => t.id === estado.ultimaTrampa) || TIPOS_TRAMPAS_UI[0];
+        const x = Math.max(0, ajustarGrilla(punto.x - def.ancho / 2, libre));
+        let y = ajustarGrilla(punto.y - def.alto / 2, libre);
+        if (def.id === TIPOS_TRAMPA_ACTIVA.PINCHOS || def.id === TIPOS_TRAMPA_ACTIVA.VAPOR) {
+            const suelo = pisoBajo(piso, { x, y: punto.y - def.alto, ancho: def.ancho, alto: def.alto }) ?? ALTURA_PLATAFORMA_DEFAULT;
+            if (Math.abs(punto.y - suelo) <= 64) y = suelo - def.alto;
+        }
+        const nueva = importarTrampa({
+            tipo: def.id,
+            x,
+            y,
+            ancho: def.ancho,
+            alto: def.alto
+        });
+        registrar();
+        piso.trampas = piso.trampas || [];
+        piso.trampas.push(nueva);
+        estado.herramienta = "seleccionar";
+        limpiarSeleccion();
+        estado.seleccionTrampa = piso.trampas.length - 1;
+        alCambiar();
+    }
+
+    function duplicarTrampa() {
+        const original = trampaSeleccionada();
+        if (!original) return;
+        const piso = pisoActivo();
+        registrar();
+        piso.trampas.push({ ...original, x: original.x + original.ancho + estado.snap * 2 });
+        limpiarSeleccion();
+        estado.seleccionTrampa = piso.trampas.length - 1;
+        alCambiar();
+    }
+
+    function eliminarTrampa() {
+        if (!trampaSeleccionada()) return;
+        const indice = estado.seleccionTrampa;
+        registrar();
+        pisoActivo().trampas.splice(indice, 1);
+        limpiarSeleccion();
+        alCambiar();
+    }
+
+    function apoyarTrampa() {
+        const trampa = trampaSeleccionada();
+        if (!trampa) return;
+        const suelo = pisoBajo(pisoActivo(), trampa) ?? ALTURA_PLATAFORMA_DEFAULT;
+        editar(() => { trampa.y = suelo - trampa.alto; });
+    }
+
+    function crearElemento(punto, libre) {
+        const piso = pisoActivo();
+        const categoria = estado.ultimaCategoriaElemento || "item";
+        const x = Math.max(0, ajustarGrilla(punto.x, libre));
+        registrar();
+        limpiarSeleccion();
+        estado.herramienta = "seleccionar";
+
+        if (categoria === "checkpoint") {
+            const suelo = pisoBajo(piso, { x, y: punto.y - 110, ancho: 48, alto: 110 }) ?? ALTURA_PLATAFORMA_DEFAULT;
+            piso.checkpoints = piso.checkpoints || [];
+            piso.checkpoints.push({ x, y: suelo - 110, ancho: 48, alto: 110, nombre: "Fichador" });
+            estado.seleccionElemento = { categoria: "checkpoint", indice: piso.checkpoints.length - 1 };
+        } else if (categoria === "item") {
+            const y = Math.max(100, ajustarGrilla(punto.y - 20, libre));
+            piso.items = piso.items || [];
+            piso.items.push({ tipo: estado.ultimoSubtipoItem || TIPOS_ITEM.VIDA, x, y, ancho: 40, alto: 40 });
+            estado.seleccionElemento = { categoria: "item", indice: piso.items.length - 1 };
+        } else if (categoria === "interruptor") {
+            const suelo = pisoBajo(piso, { x, y: punto.y - 22, ancho: 52, alto: 22 }) ?? ALTURA_PLATAFORMA_DEFAULT;
+            piso.interruptores = piso.interruptores || [];
+            piso.interruptores.push({
+                estilo: "boton_piso",
+                tipo: "boton_piso",
+                x,
+                y: suelo - 22,
+                ancho: 52,
+                alto: 22,
+                canal: "A",
+                modo: "activar",
+                duracionMs: 5000,
+                etiqueta: "CANAL A"
+            });
+            estado.seleccionElemento = { categoria: "interruptor", indice: piso.interruptores.length - 1 };
+        } else if (categoria === "meta") {
+            const suelo = pisoBajo(piso, { x, y: punto.y - 144, ancho: 92, alto: 144 }) ?? ALTURA_PLATAFORMA_DEFAULT;
+            piso.meta = {
+                x,
+                y: suelo - 144,
+                ancho: 92,
+                alto: 144,
+                etiqueta: "ASCENSOR",
+                requiereLlave: (piso.items || []).some((it) => it.tipo === TIPOS_ITEM.TARJETA)
+            };
+            estado.seleccionElemento = { categoria: "meta", indice: 0 };
+        }
+        alCambiar();
+    }
+
+    function duplicarElemento() {
+        const elem = elementoSeleccionado();
+        if (!elem) return;
+        const piso = pisoActivo();
+        if (elem.categoria === "meta") {
+            avisar("Solo puede haber un Ascensor Meta por piso.");
+            return;
+        }
+        registrar();
+        const lista = elem.categoria === "checkpoint"
+            ? piso.checkpoints
+            : elem.categoria === "interruptor"
+                ? (piso.interruptores = piso.interruptores || [])
+                : piso.items;
+        lista.push({ ...elem.datos, x: elem.datos.x + 64 });
+        limpiarSeleccion();
+        estado.seleccionElemento = { categoria: elem.categoria, indice: lista.length - 1 };
+        alCambiar();
+    }
+
+    function eliminarElemento() {
+        const elem = elementoSeleccionado();
+        if (!elem) return;
+        const piso = pisoActivo();
+        registrar();
+        if (elem.categoria === "checkpoint") piso.checkpoints.splice(elem.indice, 1);
+        else if (elem.categoria === "item") piso.items.splice(elem.indice, 1);
+        else if (elem.categoria === "interruptor") (piso.interruptores || []).splice(elem.indice, 1);
+        else if (elem.categoria === "meta") piso.meta = null;
+        limpiarSeleccion();
+        alCambiar();
+    }
+
+    function apoyarElemento() {
+        const elem = elementoSeleccionado();
+        if (!elem) return;
+        const alto = elem.datos.alto || (elem.categoria === "checkpoint" ? 110 : elem.categoria === "meta" ? 144 : elem.categoria === "interruptor" ? 22 : 40);
+        const suelo = pisoBajo(pisoActivo(), { x: elem.datos.x, y: elem.datos.y, ancho: elem.datos.ancho || 48, alto }) ?? ALTURA_PLATAFORMA_DEFAULT;
+        editar(() => { elem.datos.y = suelo - alto; });
+    }
+
+    function cambiarCategoriaElemento(nuevaCat) {
+        const elem = elementoSeleccionado();
+        if (!elem || elem.categoria === nuevaCat) return;
+        const piso = pisoActivo();
+        const { x, y, imagen } = elem.datos;
+        registrar();
+        if (elem.categoria === "checkpoint") piso.checkpoints.splice(elem.indice, 1);
+        else if (elem.categoria === "item") piso.items.splice(elem.indice, 1);
+        else if (elem.categoria === "interruptor") (piso.interruptores || []).splice(elem.indice, 1);
+        else if (elem.categoria === "meta") piso.meta = null;
+
+        estado.ultimaCategoriaElemento = nuevaCat;
+        if (nuevaCat === "checkpoint") {
+            const obj = { x, y: ALTURA_PLATAFORMA_DEFAULT - 110, ancho: 48, alto: 110, nombre: "Fichador" };
+            if (imagen) obj.imagen = imagen;
+            piso.checkpoints.push(obj);
+            estado.seleccionElemento = { categoria: "checkpoint", indice: piso.checkpoints.length - 1 };
+        } else if (nuevaCat === "item") {
+            const obj = { tipo: estado.ultimoSubtipoItem || TIPOS_ITEM.VIDA, x, y, ancho: 40, alto: 40 };
+            if (imagen) obj.imagen = imagen;
+            piso.items.push(obj);
+            estado.seleccionElemento = { categoria: "item", indice: piso.items.length - 1 };
+        } else if (nuevaCat === "interruptor") {
+            piso.interruptores = piso.interruptores || [];
+            const obj = { estilo: "boton_piso", tipo: "boton_piso", x, y: ALTURA_PLATAFORMA_DEFAULT - 22, ancho: 52, alto: 22, canal: "A", modo: "activar", duracionMs: 5000, etiqueta: "CANAL A" };
+            if (imagen) obj.imagen = imagen;
+            piso.interruptores.push(obj);
+            estado.seleccionElemento = { categoria: "interruptor", indice: piso.interruptores.length - 1 };
+        } else if (nuevaCat === "meta") {
+            const obj = { x, y: ALTURA_PLATAFORMA_DEFAULT - 144, ancho: 92, alto: 144, etiqueta: "ASCENSOR", requiereLlave: false };
+            if (imagen) obj.imagen = imagen;
+            piso.meta = obj;
+            estado.seleccionElemento = { categoria: "meta", indice: 0 };
+        }
+        alCambiar();
+    }
+
+    function generarCircuitoFase2EnPiso() {
+        const actual = pisoActivo();
+        if (!actual) return;
+        const tieneElementos = (actual.trampas?.length || 0) + (actual.checkpoints?.length || 0) + (actual.items?.length || 0) + (actual.interruptores?.length || 0) > 0;
+        if (tieneElementos && !window.confirm("¿Reemplazar las trampas, vidas, poderes, interruptores, checkpoints y plataformas flotantes de este piso por un circuito de prueba automático?")) {
+            return;
+        }
+        registrar();
+        const base = {
+            id: actual.id,
+            plataformas: actual.plataformas.filter((p) => !esPlataformaFlotante(p)),
+            trampas: [],
+            checkpoints: [],
+            items: [],
+            interruptores: [],
+            meta: null
+        };
+        decorarPisoFase2(base);
+        const reimportado = importarPiso({
+            ...exportarPiso(actual),
+            plataformas: base.plataformas,
+            trampas: base.trampas,
+            checkpoints: base.checkpoints,
+            items: base.items,
+            interruptores: base.interruptores,
+            meta: base.meta
+        });
+        actual.plataformas = reimportado.plataformas;
+        actual.trampas = reimportado.trampas;
+        actual.checkpoints = reimportado.checkpoints;
+        actual.items = reimportado.items;
+        actual.interruptores = reimportado.interruptores;
+        actual.meta = reimportado.meta;
+        if (!actual.trampasHabilitadas.includes(TRAMPAS.QUEBRADIZO)) actual.trampasHabilitadas.push(TRAMPAS.QUEBRADIZO);
+        limpiarSeleccion();
+        alCambiar();
+        avisar("⚡ Circuito generado en este piso (Plataformas, Trampas, Botones, Vidas, Poder Doble Salto, Checkpoints y Meta).");
     }
 
     // --------------------------------------------------- Acciones de objeto
@@ -1304,7 +2048,7 @@
         registrar();
         piso.objetos.push(nuevo);
         estado.herramienta = "seleccionar";
-        estado.seleccion = null;
+        limpiarSeleccion();
         estado.seleccionObjeto = piso.objetos.length - 1;
         alCambiar();
     }
@@ -1315,6 +2059,7 @@
         const piso = pisoActivo();
         registrar();
         piso.objetos.push({ ...original, x: original.x + original.ancho + estado.snap });
+        limpiarSeleccion();
         estado.seleccionObjeto = piso.objetos.length - 1;
         alCambiar();
         irAObjeto(estado.seleccionObjeto);
@@ -1325,13 +2070,14 @@
         const indice = estado.seleccionObjeto;
         registrar();
         pisoActivo().objetos.splice(indice, 1);
-        estado.seleccionObjeto = null;
+        limpiarSeleccion();
         alCambiar();
     }
 
     function usarTamanoOriginal() {
         const objeto = objetoSeleccionado();
-        const imagen = objeto?.tipo ? activo(obtenerRutaObjeto(objeto.tipo)) : null;
+        const rutaObj = objeto ? obtenerRutaObjeto(objeto.tipo, objeto.imagen) : "";
+        const imagen = rutaObj ? activo(rutaObj) : null;
         if (imagen?.estado !== "ok") return;
         editar(() => {
             const base = objeto.y + objeto.alto;
@@ -1573,25 +2319,26 @@
         ctx.fillText(texto, x, y + 0.5 / z);
     }
 
-    function dibujarTile(ruta, x, y, ancho, color) {
+    function dibujarTile(ruta, x, y, ancho, color, alto = ALTO_TILE) {
         const entrada = activo(ruta);
         if (entrada.estado === "ok") {
-            ctx.drawImage(entrada.img, x, y, ancho, ALTO_TILE);
+            ctx.drawImage(entrada.img, x, y, ancho, alto);
             return;
         }
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, ancho, ALTO_TILE);
+        ctx.fillRect(x, y, ancho, alto);
         ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
-        ctx.fillRect(x, y + ALTO_TILE - 12, ancho, 12);
+        ctx.fillRect(x, y + alto - Math.min(12, alto / 3), ancho, Math.min(12, alto / 3));
     }
 
     function dibujarFondo(piso, ancho, desde, hasta) {
+        // Todo por debajo de la linea del piso es negro solido (#000000) para que nunca se vea la imagen de fondo debajo del piso
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, 0, ancho, ALTO_MUNDO);
+        ctx.rect(0, 0, ancho, ALTURA_PLATAFORMA_DEFAULT);
         ctx.clip();
         ctx.fillStyle = piso.colorPlaceholder;
-        ctx.fillRect(0, 0, ancho, ALTO_MUNDO);
+        ctx.fillRect(0, 0, ancho, ALTURA_PLATAFORMA_DEFAULT);
 
         const fondo = estado.verFondo && piso.fondoRuta ? activo(piso.fondoRuta) : null;
         if (fondo?.estado === "ok") {
@@ -1601,8 +2348,11 @@
             }
         }
         ctx.fillStyle = "rgba(12, 14, 18, 0.38)";
-        ctx.fillRect(0, 0, ancho, ALTO_MUNDO);
+        ctx.fillRect(0, 0, ancho, ALTURA_PLATAFORMA_DEFAULT);
         ctx.restore();
+
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, ALTURA_PLATAFORMA_DEFAULT, ancho, ALTO_MUNDO - ALTURA_PLATAFORMA_DEFAULT);
     }
 
     function dibujarGuias(ancho, desde, hasta) {
@@ -1631,23 +2381,37 @@
         ctx.strokeRect(0, 0, ancho, ALTO_MUNDO);
     }
 
-    function dibujarArco(origen, destino, personaje, color) {
+    function dibujarArco(origen, destino, personaje, color, conDash = false) {
         const anchoColision = personaje.colision?.ancho || 64;
         let x = origen.x + origen.ancho + anchoColision * (0.5 - APOYO_MINIMO);
         let y = origen.y;
         let velocidadY = -personaje.fuerzaSalto;
+        const dashFrames = personaje.dashFrames || 11;
+        const dashVel = personaje.velocidadDash || 13.5;
+        let dashRestante = 0;
+        let dashUsado = false;
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2 / vista.zoom;
-        ctx.setLineDash([5 / vista.zoom, 5 / vista.zoom]);
+        ctx.lineWidth = (conDash ? 1.5 : 2) / vista.zoom;
+        ctx.setLineDash(conDash ? [3 / vista.zoom, 4 / vista.zoom] : [5 / vista.zoom, 5 / vista.zoom]);
         ctx.beginPath();
         ctx.moveTo(x, y);
         for (let frames = 0; frames < 600; frames++) {
-            velocidadY += GRAVEDAD;
-            y += velocidadY;
-            x += personaje.velocidad;
+            if (conDash && !dashUsado && velocidadY >= 0) {
+                dashUsado = true;
+                dashRestante = dashFrames;
+                velocidadY = 0;
+            }
+            if (dashRestante > 0) {
+                dashRestante--;
+                x += dashVel;
+            } else {
+                velocidadY += GRAVEDAD;
+                y += velocidadY;
+                x += personaje.velocidad;
+            }
             ctx.lineTo(x, y);
-            if ((velocidadY >= 0 && y >= destino.y) || y > ALTO_MUNDO) break;
+            if ((velocidadY >= 0 && dashRestante === 0 && y >= destino.y) || y > ALTO_MUNDO) break;
         }
         ctx.stroke();
         ctx.setLineDash([]);
@@ -1658,25 +2422,25 @@
         piso.plataformas.forEach((p, i) => {
             const ancho = huecoDespues(piso.plataformas, i);
             if (!ancho) return;
-            const siguiente = piso.plataformas[i + 1];
+            const sigIdx = siguienteIndiceSuelo(piso.plataformas, i);
+            const siguiente = piso.plataformas[sigIdx];
+            if (!siguiente) return;
             const inicio = p.x + p.ancho;
             const arriba = Math.min(p.y, siguiente.y);
             const hueco = analizarHueco(piso, i);
             const color = COLORES_SALTO[hueco.resultado];
 
-            const gradiente = ctx.createLinearGradient(0, arriba, 0, ALTO_MUNDO);
-            gradiente.addColorStop(0, "rgba(5, 7, 10, 0.55)");
-            gradiente.addColorStop(1, "rgba(0, 0, 0, 0.95)");
-            ctx.fillStyle = gradiente;
+            ctx.fillStyle = "#000000";
             ctx.fillRect(inicio, arriba, ancho, ALTO_MUNDO - arriba);
             ctx.fillStyle = color;
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = 0.75;
             ctx.fillRect(inicio, arriba + ALTO_TILE + 6 / vista.zoom, ancho, 3 / vista.zoom);
             ctx.globalAlpha = 1;
 
             if (estado.verArcos && personaje) {
                 const llega = alcanceSalto(personaje, siguiente.y - p.y) >= ancho;
-                dibujarArco(p, siguiente, personaje, llega ? COLORES_SALTO.ok : COLORES_SALTO.imposible);
+                dibujarArco(p, siguiente, personaje, llega ? COLORES_SALTO.ok : COLORES_SALTO.parcial, false);
+                dibujarArco(p, siguiente, personaje, "#ff4fd8", true);
             }
             if (ancho * vista.zoom > 34) {
                 etiqueta(`${ancho}px`, inicio + ancho / 2, arriba + ALTO_TILE / 2, color);
@@ -1688,39 +2452,213 @@
         const plataformas = piso.plataformas;
         const p = plataformas[indice];
         const z = vista.zoom;
+        const flotante = esPlataformaFlotante(p);
+        const altoP = p.alto || (flotante ? 28 : ALTO_TILE);
         const color = COLORES_PISO[piso.tipoPiso] || piso.colorPlaceholder;
         const rutasTema = obtenerRutasTilesTema(piso.tilesTema);
         const rutas = rutasPiso(piso);
-        const bordeIzq = indice > 0 && huecoDespues(plataformas, indice - 1) > 0 ? Math.min(ANCHO_TILE, p.ancho) : 0;
-        const bordeDer = huecoDespues(plataformas, indice) > 0 ? Math.min(ANCHO_TILE, Math.max(0, p.ancho - bordeIzq)) : 0;
 
-        if (bordeIzq) dibujarTile(rutasTema.bordeRotoIzq, p.x, p.y, bordeIzq, color);
-        for (let x = bordeIzq, pieza = 0; x < p.ancho - bordeDer; pieza++) {
-            const ancho = Math.min(ANCHO_TILE, p.ancho - bordeDer - x);
-            dibujarTile(rutas[pieza % rutas.length], p.x + x, p.y, ancho, color);
-            x += ancho;
+        if (!flotante) {
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(p.x, p.y, p.ancho, ALTO_MUNDO - p.y);
+            const antSuelo = plataformas.slice(0, indice).reverse().find((otra) => !esPlataformaFlotante(otra));
+            const hayHuecoAntes = antSuelo ? p.x > antSuelo.x + antSuelo.ancho : false;
+            const bordeIzq = hayHuecoAntes ? Math.min(ANCHO_TILE, p.ancho) : 0;
+            const bordeDer = huecoDespues(plataformas, indice) > 0 ? Math.min(ANCHO_TILE, Math.max(0, p.ancho - bordeIzq)) : 0;
+
+            if (bordeIzq) dibujarTile(rutasTema.bordeRotoIzq, p.x, p.y, bordeIzq, color);
+            for (let x = bordeIzq, pieza = 0; x < p.ancho - bordeDer; pieza++) {
+                const ancho = Math.min(ANCHO_TILE, p.ancho - bordeDer - x);
+                dibujarTile(rutas[pieza % rutas.length], p.x + x, p.y, ancho, color);
+                x += ancho;
+            }
+            if (bordeDer) dibujarTile(rutasTema.bordeRotoDer, p.x + p.ancho - bordeDer, p.y, bordeDer, color);
+        } else {
+            ctx.fillStyle = "#2b3340";
+            ctx.fillRect(p.x, p.y, p.ancho, altoP);
+            ctx.fillStyle = colorTipo(p.tipo);
+            ctx.fillRect(p.x, p.y, p.ancho, Math.min(6, altoP));
         }
-        if (bordeDer) dibujarTile(rutasTema.bordeRotoDer, p.x + p.ancho - bordeDer, p.y, bordeDer, color);
 
-        if (p.tipo !== TIPOS_PLATAFORMA.NORMAL) {
+        if (p.tipo !== TIPOS_PLATAFORMA.NORMAL || flotante) {
             const tinte = colorTipo(p.tipo);
             ctx.fillStyle = tinte;
-            ctx.globalAlpha = 0.3;
-            ctx.fillRect(p.x, p.y, p.ancho, ALTO_TILE);
+            ctx.globalAlpha = 0.28;
+            ctx.fillRect(p.x, p.y, p.ancho, altoP);
             ctx.globalAlpha = 1;
             ctx.strokeStyle = tinte;
             ctx.lineWidth = 2 / z;
-            ctx.strokeRect(p.x, p.y, p.ancho, ALTO_TILE);
+            ctx.strokeRect(p.x, p.y, p.ancho, altoP);
             if (p.tipo === TIPOS_PLATAFORMA.PIVOTE) {
                 ctx.fillStyle = tinte;
-                ctx.fillRect(p.x + p.ancho / 2 - 3 / z, p.y, 6 / z, ALTO_TILE);
+                ctx.fillRect(p.x + p.ancho / 2 - 3 / z, p.y, 6 / z, altoP);
+            } else if (p.tipo === TIPOS_PLATAFORMA.MOVIL) {
+                const dist = Number(p.movil?.rango) || 140;
+                const ejeMov = p.movil?.eje === "y" ? "y" : "x";
+                ctx.save();
+                ctx.strokeStyle = tinte;
+                ctx.setLineDash([4 / z, 4 / z]);
+                ctx.beginPath();
+                if (ejeMov === "y") {
+                    ctx.moveTo(p.x + p.ancho / 2, p.y + altoP / 2 - dist);
+                    ctx.lineTo(p.x + p.ancho / 2, p.y + altoP / 2 + dist);
+                } else {
+                    ctx.moveTo(p.x + p.ancho / 2 - dist, p.y + altoP / 2);
+                    ctx.lineTo(p.x + p.ancho / 2 + dist, p.y + altoP / 2);
+                }
+                ctx.stroke();
+                ctx.restore();
+            } else if (p.tipo === TIPOS_PLATAFORMA.CINTA) {
+                const dir = (Number(p.velocidadCinta) || 3.4) >= 0 ? ">>>" : "<<<";
+                etiqueta(dir, p.x + p.ancho / 2, p.y + altoP / 2, "#ffffff");
             }
         }
 
-        if (p.ancho * z > 70) {
+        if (p.ancho * z > 65) {
             const nombre = TIPOS.find((t) => t.id === p.tipo)?.nombre || p.tipo;
-            const texto = p.tipo === TIPOS_PLATAFORMA.NORMAL ? `${indice + 1} · ${p.ancho}px` : `${indice + 1} · ${nombre} · ${p.ancho}px`;
-            etiqueta(texto, p.x + p.ancho / 2, p.y + ALTO_TILE + 16 / z, colorTipo(p.tipo));
+            const prefijo = flotante ? "Flotante" : `${indice + 1}`;
+            const texto = p.tipo === TIPOS_PLATAFORMA.NORMAL && !flotante
+                ? `${indice + 1} · ${p.ancho}px`
+                : `${prefijo} · ${nombre} · ${p.ancho}px`;
+            etiqueta(texto, p.x + p.ancho / 2, p.y + altoP + 15 / z, flotante ? "#38bdf8" : colorTipo(p.tipo));
+        }
+    }
+
+    function dibujarTrampasYElementos(piso, desde, hasta) {
+        const z = vista.zoom;
+
+        // Trampas activas
+        (piso.trampas || []).forEach((trampa) => {
+            if (trampa.x + trampa.ancho < desde - 200 || trampa.x > hasta + 200) return;
+            const def = TIPOS_TRAMPAS_UI.find((t) => t.id === trampa.tipo) || TIPOS_TRAMPAS_UI[0];
+            const color = def.color;
+
+            if (trampa.tipo === TIPOS_TRAMPA_ACTIVA.SIERRA) {
+                const dist = Number(trampa.rango) || 160;
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5 / z;
+                ctx.setLineDash([4 / z, 4 / z]);
+                ctx.beginPath();
+                const cx = trampa.x + trampa.ancho / 2;
+                const cy = trampa.y + trampa.alto / 2;
+                if (trampa.eje === "y") {
+                    ctx.moveTo(cx, cy - dist);
+                    ctx.lineTo(cx, cy + dist);
+                } else {
+                    ctx.moveTo(cx - dist, cy);
+                    ctx.lineTo(cx + dist, cy);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            const rutaImg = typeof obtenerRutaTrampa === "function" ? obtenerRutaTrampa(trampa) : trampa.imagen;
+            const imgPersonalizada = rutaImg ? activo(rutaImg) : null;
+            if (imgPersonalizada?.estado === "ok") {
+                ctx.drawImage(imgPersonalizada.img, trampa.x, trampa.y, trampa.ancho, trampa.alto);
+            } else {
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.32;
+                ctx.fillRect(trampa.x, trampa.y, trampa.ancho, trampa.alto);
+                ctx.globalAlpha = 1;
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2 / z;
+            ctx.strokeRect(trampa.x, trampa.y, trampa.ancho, trampa.alto);
+            if (trampa.ancho * z > 36) {
+                etiqueta(def.nombre, trampa.x + trampa.ancho / 2, trampa.y - 12 / z, color);
+            }
+        });
+
+        // Checkpoints
+        (piso.checkpoints || []).forEach((cp, idx) => {
+            const w = cp.ancho || 44;
+            const hCp = cp.alto || 96;
+            if (cp.x + w < desde || cp.x > hasta) return;
+            const imgCp = cp.imagen ? activo(cp.imagen) : null;
+            if (imgCp?.estado === "ok") {
+                ctx.drawImage(imgCp.img, cp.x, cp.y, w, hCp);
+            } else {
+                ctx.fillStyle = "rgba(52, 211, 153, 0.25)";
+                ctx.fillRect(cp.x, cp.y, w, hCp);
+            }
+            ctx.strokeStyle = "#34d399";
+            ctx.lineWidth = 2 / z;
+            ctx.strokeRect(cp.x, cp.y, w, hCp);
+            etiqueta(cp.etiqueta || `CP ${idx + 1}`, cp.x + w / 2, cp.y - 12 / z, "#34d399");
+        });
+
+        // Items coleccionables y poderes
+        (piso.items || []).forEach((it) => {
+            const w = it.ancho || 36;
+            const hIt = it.alto || 36;
+            if (it.x + w < desde || it.x > hasta) return;
+            const defItem = TIPOS_ITEMS_UI.find((t) => t.id === it.tipo) || TIPOS_ITEMS_UI[0];
+            const color = defItem.color;
+            const rutaImg = typeof obtenerRutaItem === "function" ? obtenerRutaItem(it) : it.imagen;
+            const imgItem = rutaImg ? activo(rutaImg) : null;
+            if (imgItem?.estado === "ok") {
+                ctx.drawImage(imgItem.img, it.x, it.y, w, hIt);
+            } else {
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.32;
+                ctx.fillRect(it.x, it.y, w, hIt);
+                ctx.globalAlpha = 1;
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2 / z;
+            ctx.strokeRect(it.x, it.y, w, hIt);
+            if (z > 0.35) {
+                const texto = it.tipo === TIPOS_ITEM.VIDA
+                    ? "VIDA ♥"
+                    : it.tipo === TIPOS_ITEM.DOBLE_SALTO
+                        ? "2X SALTO ▲"
+                        : it.tipo === TIPOS_ITEM.CAFE
+                            ? "CAFÉ"
+                            : "TARJETA";
+                etiqueta(texto, it.x + w / 2, it.y - 11 / z, color);
+            }
+        });
+
+        // Botones / Interruptores de canal
+        (piso.interruptores || []).forEach((sw) => {
+            const w = sw.ancho || 56;
+            const hSw = sw.alto || 20;
+            if (sw.x + w < desde || sw.x > hasta) return;
+            const imgSw = sw.imagen ? activo(sw.imagen) : null;
+            if (imgSw?.estado === "ok") {
+                ctx.drawImage(imgSw.img, sw.x, sw.y, w, hSw);
+            } else {
+                ctx.fillStyle = "rgba(245, 158, 11, 0.35)";
+                ctx.fillRect(sw.x, sw.y, w, hSw);
+            }
+            ctx.strokeStyle = "#f59e0b";
+            ctx.lineWidth = 2 / z;
+            ctx.strokeRect(sw.x, sw.y, w, hSw);
+            if (z > 0.35) {
+                etiqueta(`BTN [${sw.canal || "canal"}]`, sw.x + w / 2, sw.y - 11 / z, "#f59e0b");
+            }
+        });
+
+        // Ascensor Meta
+        if (piso.meta) {
+            const m = piso.meta;
+            const w = m.ancho || 96;
+            const hM = m.alto || 152;
+            if (m.x + w >= desde && m.x <= hasta) {
+                const imgMeta = m.imagen ? activo(m.imagen) : null;
+                if (imgMeta?.estado === "ok") {
+                    ctx.drawImage(imgMeta.img, m.x, m.y, w, hM);
+                } else {
+                    ctx.fillStyle = "rgba(56, 189, 248, 0.22)";
+                    ctx.fillRect(m.x, m.y, w, hM);
+                }
+                ctx.strokeStyle = "#38bdf8";
+                ctx.lineWidth = 2.5 / z;
+                ctx.strokeRect(m.x, m.y, w, hM);
+                etiqueta(m.requiereLlave ? "META 🔒" : "META", m.x + w / 2, m.y - 14 / z, "#38bdf8");
+            }
         }
     }
 
@@ -1728,7 +2666,8 @@
         const o = piso.objetos[indice];
         const z = vista.zoom;
         const modo = MODOS.find((m) => m.id === o.modo) || MODOS[0];
-        const imagen = o.tipo ? activo(obtenerRutaObjeto(o.tipo)) : null;
+        const ruta = obtenerRutaObjeto(o.tipo, o.imagen);
+        const imagen = ruta ? activo(ruta) : null;
 
         if (imagen?.estado === "ok") {
             ctx.drawImage(imagen.img, o.x, o.y, o.ancho, o.alto);
@@ -1802,16 +2741,17 @@
         const p = plataformaSeleccionada();
         const z = vista.zoom;
         if (p) {
+            const altoP = p.alto || (esPlataformaFlotante(p) ? 28 : ALTO_TILE);
             ctx.strokeStyle = "#4f9cf9";
             ctx.lineWidth = 2 / z;
-            ctx.strokeRect(p.x - 1 / z, p.y - 1 / z, p.ancho + 2 / z, ALTO_TILE + 2 / z);
+            ctx.strokeRect(p.x - 1 / z, p.y - 1 / z, p.ancho + 2 / z, altoP + 2 / z);
             const lado = 10 / z;
             [p.x, p.x + p.ancho].forEach((x) => {
                 ctx.fillStyle = "#ffffff";
-                ctx.fillRect(x - lado / 2, p.y + ALTO_TILE / 2 - lado, lado, lado * 2);
-                ctx.strokeRect(x - lado / 2, p.y + ALTO_TILE / 2 - lado, lado, lado * 2);
+                ctx.fillRect(x - lado / 2, p.y + altoP / 2 - lado, lado, lado * 2);
+                ctx.strokeRect(x - lado / 2, p.y + altoP / 2 - lado, lado, lado * 2);
             });
-            etiqueta(`x ${p.x} · ${p.ancho}px`, p.x + p.ancho / 2, p.y - 16 / z, "#cfe3fd");
+            etiqueta(`x ${p.x} · y ${p.y} · ${p.ancho}px`, p.x + p.ancho / 2, p.y - 16 / z, "#cfe3fd");
         }
 
         const o = objetoSeleccionado();
@@ -1824,6 +2764,28 @@
             ctx.fillRect(o.x + o.ancho - lado / 2, o.y - lado / 2, lado, lado);
             ctx.strokeRect(o.x + o.ancho - lado / 2, o.y - lado / 2, lado, lado);
             etiqueta(`${o.tipo || "sin imagen"} · x ${o.x} · y ${o.y} · ${o.ancho}×${o.alto}`, o.x + o.ancho / 2, o.y + o.alto + 16 / z, "#cfe3fd");
+        }
+
+        const t = trampaSeleccionada();
+        if (t) {
+            const lado = 10 / z;
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5 / z;
+            ctx.strokeRect(t.x - 2 / z, t.y - 2 / z, t.ancho + 4 / z, t.alto + 4 / z);
+            ctx.fillStyle = "#f0616d";
+            ctx.fillRect(t.x + t.ancho - lado / 2, t.y - lado / 2, lado, lado);
+            etiqueta(`${t.tipo} · x ${t.x} · y ${t.y} · ${t.ancho}×${t.alto}`, t.x + t.ancho / 2, t.y + t.alto + 16 / z, "#ffd1d6");
+        }
+
+        const el = elementoSeleccionado();
+        if (el) {
+            const d = el.datos;
+            const w = d.ancho || (el.categoria === "checkpoint" ? 44 : el.categoria === "meta" ? 96 : el.categoria === "interruptor" ? 56 : 36);
+            const hEl = d.alto || (el.categoria === "checkpoint" ? 96 : el.categoria === "meta" ? 152 : el.categoria === "interruptor" ? 20 : 36);
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5 / z;
+            ctx.strokeRect(d.x - 2 / z, d.y - 2 / z, w + 4 / z, hEl + 4 / z);
+            etiqueta(`${el.categoria} · x ${d.x} · y ${d.y}`, d.x + w / 2, d.y + hEl + 16 / z, "#cfe3fd");
         }
 
         if (arrastre?.tipo === "crear") {
@@ -1878,8 +2840,10 @@
         ctxMini.fillRect(0, 0, ancho, alto);
         ctxMini.fillStyle = piso.colorPlaceholder;
         ctxMini.globalAlpha = 0.45;
-        ctxMini.fillRect(0, 0, ancho, alto);
+        ctxMini.fillRect(0, 0, ancho, (ALTURA_PLATAFORMA_DEFAULT / ALTO_MUNDO) * alto);
         ctxMini.globalAlpha = 1;
+        ctxMini.fillStyle = "#000000";
+        ctxMini.fillRect(0, (ALTURA_PLATAFORMA_DEFAULT / ALTO_MUNDO) * alto, ancho, alto);
 
         piso.plataformas.forEach((p, i) => {
             const y = (p.y / ALTO_MUNDO) * alto;
@@ -1891,12 +2855,17 @@
                 ctxMini.globalAlpha = 1;
             }
             ctxMini.fillStyle = i === estado.seleccion ? "#ffffff" : colorTipo(p.tipo);
-            ctxMini.fillRect(p.x * escala, y, Math.max(1, p.ancho * escala), Math.max(7, (ALTO_TILE / ALTO_MUNDO) * alto));
+            ctxMini.fillRect(p.x * escala, y, Math.max(1, p.ancho * escala), Math.max(4, ((p.alto || ALTO_TILE) / ALTO_MUNDO) * alto));
         });
 
         piso.objetos.forEach((o, i) => {
             ctxMini.fillStyle = i === estado.seleccionObjeto ? "#ffffff" : MODOS.find((m) => m.id === o.modo)?.color || MODOS[0].color;
             ctxMini.fillRect(o.x * escala, (o.y / ALTO_MUNDO) * alto, Math.max(2, o.ancho * escala), Math.max(2, (o.alto / ALTO_MUNDO) * alto));
+        });
+
+        (piso.trampas || []).forEach((t, i) => {
+            ctxMini.fillStyle = i === estado.seleccionTrampa ? "#ffffff" : "#f0616d";
+            ctxMini.fillRect(t.x * escala, (t.y / ALTO_MUNDO) * alto, Math.max(2, t.ancho * escala), Math.max(2, (t.alto / ALTO_MUNDO) * alto));
         });
 
         ctxMini.strokeStyle = "#4f9cf9";
@@ -1929,9 +2898,10 @@
         dibujarObjetos(piso, true, desde, hasta);
         dibujarHuecos(piso);
         piso.plataformas.forEach((p, i) => {
-            if (p.x + p.ancho >= desde && p.x <= hasta) dibujarPlataforma(piso, i);
+            if (p.x + p.ancho >= desde - 200 && p.x <= hasta + 200) dibujarPlataforma(piso, i);
         });
         dibujarObjetos(piso, false, desde, hasta);
+        dibujarTrampasYElementos(piso, desde, hasta);
         dibujarInicio(piso);
         dibujarSeleccion();
         ctx.restore();
@@ -1954,7 +2924,8 @@
         const plataformas = pisoActivo()?.plataformas || [];
         for (let i = plataformas.length - 1; i >= 0; i--) {
             const p = plataformas[i];
-            if (punto.x >= p.x && punto.x <= p.x + p.ancho && punto.y >= p.y && punto.y <= p.y + ALTO_TILE) return i;
+            const altoP = p.alto || (esPlataformaFlotante(p) ? 28 : ALTO_TILE);
+            if (punto.x >= p.x && punto.x <= p.x + p.ancho && punto.y >= p.y && punto.y <= p.y + altoP) return i;
         }
         return -1;
     }
@@ -1969,8 +2940,62 @@
         return -1;
     }
 
-    // Mismo orden que el dibujo: objetos con colision, plataformas y, al fondo, objetos de fondo
+    function trampaEn(punto) {
+        const trampas = pisoActivo()?.trampas || [];
+        for (let i = trampas.length - 1; i >= 0; i--) {
+            const t = trampas[i];
+            if (punto.x >= t.x && punto.x <= t.x + t.ancho && punto.y >= t.y && punto.y <= t.y + t.alto) return i;
+        }
+        return -1;
+    }
+
+    function elementoNivelEn(punto) {
+        const piso = pisoActivo();
+        if (!piso) return null;
+        if (piso.meta) {
+            const m = piso.meta;
+            const w = m.ancho || 96;
+            const hM = m.alto || 152;
+            if (punto.x >= m.x && punto.x <= m.x + w && punto.y >= m.y && punto.y <= m.y + hM) {
+                return { categoria: "meta", indice: 0 };
+            }
+        }
+        const interruptores = piso.interruptores || [];
+        for (let i = interruptores.length - 1; i >= 0; i--) {
+            const sw = interruptores[i];
+            const w = sw.ancho || 56;
+            const hSw = sw.alto || 20;
+            if (punto.x >= sw.x && punto.x <= sw.x + w && punto.y >= sw.y && punto.y <= sw.y + hSw) {
+                return { categoria: "interruptor", indice: i };
+            }
+        }
+        const items = piso.items || [];
+        for (let i = items.length - 1; i >= 0; i--) {
+            const it = items[i];
+            const w = it.ancho || 36;
+            const hIt = it.alto || 36;
+            if (punto.x >= it.x && punto.x <= it.x + w && punto.y >= it.y && punto.y <= it.y + hIt) {
+                return { categoria: "item", indice: i };
+            }
+        }
+        const cps = piso.checkpoints || [];
+        for (let i = cps.length - 1; i >= 0; i--) {
+            const cp = cps[i];
+            const w = cp.ancho || 44;
+            const hCp = cp.alto || 96;
+            if (punto.x >= cp.x && punto.x <= cp.x + w && punto.y >= cp.y && punto.y <= cp.y + hCp) {
+                return { categoria: "checkpoint", indice: i };
+            }
+        }
+        return null;
+    }
+
+    // Mismo orden que el dibujo: elementos, trampas, objetos con colision, plataformas y, al fondo, objetos de fondo
     function elementoEn(punto) {
+        const elemNivel = elementoNivelEn(punto);
+        if (elemNivel) return { elementoNivel: elemNivel };
+        const trampa = trampaEn(punto);
+        if (trampa !== -1) return { trampa };
         const delante = objetoEn(punto, false);
         if (delante !== -1) return { objeto: delante };
         const plataforma = plataformaEn(punto);
@@ -1980,7 +3005,7 @@
     }
 
     function asaObjetoEn(punto) {
-        const o = objetoSeleccionado();
+        const o = objetoSeleccionado() || trampaSeleccionada();
         if (!o) return false;
         const tolerancia = 8 / vista.zoom;
         return Math.abs(punto.x - (o.x + o.ancho)) <= tolerancia && Math.abs(punto.y - o.y) <= tolerancia;
@@ -1989,8 +3014,9 @@
     function asaEn(punto) {
         const p = plataformaSeleccionada();
         if (!p) return null;
+        const altoP = p.alto || (esPlataformaFlotante(p) ? 28 : ALTO_TILE);
         const tolerancia = 8 / vista.zoom;
-        if (punto.y < p.y - tolerancia || punto.y > p.y + ALTO_TILE + tolerancia) return null;
+        if (punto.y < p.y - tolerancia || punto.y > p.y + altoP + tolerancia) return null;
         if (Math.abs(punto.x - p.x) <= tolerancia) return "izq";
         if (Math.abs(punto.x - (p.x + p.ancho)) <= tolerancia) return "der";
         return null;
@@ -2024,19 +3050,24 @@
         return izquierda;
     }
 
-    // Mover lleva el objeto a cualquier parte. El asa cambia el tamano dejando fija la esquina inferior izquierda.
+    // Mover lleva el objeto/trampa/elemento a cualquier parte. El asa cambia el tamano dejando fija la esquina inferior izquierda.
     function aplicarArrastreObjeto(punto, evento) {
         const o = arrastre.objeto;
         const original = arrastre.original;
         const libre = evento.altKey;
         const dx = punto.x - arrastre.inicio.x;
         const dy = punto.y - arrastre.inicio.y;
-        const base = original.y + original.alto;
-        const nuevo = { x: o.x, y: o.y, ancho: o.ancho, alto: o.alto };
+        const altoActual = o.alto || 36;
+        const base = original.y + (original.alto || altoActual);
+        const nuevo = { x: o.x, y: o.y };
+        if (o.ancho !== undefined) nuevo.ancho = o.ancho;
+        if (o.alto !== undefined) nuevo.alto = o.alto;
 
         if (arrastre.tipo === "moverObjeto") {
             nuevo.x = Math.max(0, ajustarGrilla(original.x + dx, libre));
-            nuevo.y = ajustarBase({ ...o, x: nuevo.x }, base + dy, libre) - o.alto;
+            nuevo.y = arrastre.libreY
+                ? ajustarGrilla(original.y + dy, libre)
+                : ajustarBase({ ...o, x: nuevo.x, ancho: o.ancho || 36, alto: altoActual }, base + dy, libre) - altoActual;
         } else {
             nuevo.ancho = Math.max(LADO_MINIMO_OBJETO, ajustarGrilla(original.ancho + dx, libre));
             nuevo.alto = Math.max(LADO_MINIMO_OBJETO, evento.shiftKey
@@ -2079,14 +3110,19 @@
         }
 
         const p = arrastre.plataforma;
-        const antes = `${p.x}:${p.ancho}`;
+        const antes = `${p.x}:${p.y}:${p.ancho}`;
         const delta = punto.x - arrastre.inicio;
+        const deltaY = punto.y - (arrastre.inicioY ?? punto.y);
         const original = arrastre.original;
         let x = p.x;
+        let y = p.y;
         let ancho = p.ancho;
 
         if (arrastre.tipo === "mover") {
             x = ajustarMovimiento(original.x + delta, p, evento.altKey);
+            if (esPlataformaFlotante(p)) {
+                y = Math.max(80, Math.min(ALTURA_PLATAFORMA_DEFAULT - 32, ajustarGrilla(original.y + deltaY, evento.altKey)));
+            }
         } else if (arrastre.tipo === "izq") {
             const fin = original.x + original.ancho;
             x = Math.min(ajustarBorde(original.x + delta, p, evento.altKey), fin - ANCHO_MINIMO);
@@ -2095,12 +3131,13 @@
             ancho = Math.max(ANCHO_MINIMO, ajustarBorde(original.x + original.ancho + delta, p, evento.altKey) - original.x);
         }
 
-        if (`${x}:${ancho}` === antes) return;
+        if (`${x}:${y}:${ancho}` === antes) return;
         if (!arrastre.registrado) {
             registrar();
             arrastre.registrado = true;
         }
         p.x = x;
+        p.y = y;
         p.ancho = ancho;
         ordenar(piso, p);
         sincronizarInspector();
@@ -2125,6 +3162,18 @@
             crearObjeto(punto, evento.altKey);
             return;
         }
+        if (estado.herramienta === HERRAMIENTA_FLOTANTE) {
+            crearPlataformaFlotante(punto, evento.altKey);
+            return;
+        }
+        if (estado.herramienta === HERRAMIENTA_TRAMPA) {
+            crearTrampa(punto, evento.altKey);
+            return;
+        }
+        if (estado.herramienta === HERRAMIENTA_ELEMENTO) {
+            crearElemento(punto, evento.altKey);
+            return;
+        }
 
         if (estado.herramienta !== "seleccionar") {
             const x = ajustarBorde(punto.x, null, evento.altKey);
@@ -2134,7 +3183,7 @@
         }
 
         if (asaObjetoEn(punto)) {
-            const o = objetoSeleccionado();
+            const o = objetoSeleccionado() || trampaSeleccionada();
             arrastre = { tipo: "tamObjeto", objeto: o, original: { ...o }, inicio: punto, registrado: false };
             return;
         }
@@ -2142,11 +3191,23 @@
         const asa = asaEn(punto);
         if (asa) {
             const p = plataformaSeleccionada();
-            arrastre = { tipo: asa, plataforma: p, original: { x: p.x, ancho: p.ancho }, inicio: punto.x, registrado: false };
+            arrastre = { tipo: asa, plataforma: p, original: { x: p.x, y: p.y, ancho: p.ancho }, inicio: punto.x, inicioY: punto.y, registrado: false };
             return;
         }
 
         const elemento = elementoEn(punto);
+        if (elemento?.elementoNivel) {
+            seleccionarElemento(elemento.elementoNivel);
+            const d = elementoSeleccionado().datos;
+            arrastre = { tipo: "moverObjeto", objeto: d, original: { ...d }, inicio: punto, libreY: true, registrado: false };
+            return;
+        }
+        if (elemento?.trampa !== undefined) {
+            const t = piso.trampas[elemento.trampa];
+            seleccionarTrampa(elemento.trampa);
+            arrastre = { tipo: "moverObjeto", objeto: t, original: { ...t }, inicio: punto, libreY: true, registrado: false };
+            return;
+        }
         if (elemento?.objeto !== undefined) {
             const o = piso.objetos[elemento.objeto];
             seleccionarObjeto(elemento.objeto);
@@ -2158,7 +3219,7 @@
         if (indice !== -1) {
             const p = piso.plataformas[indice];
             seleccionar(indice);
-            arrastre = { tipo: "mover", plataforma: p, original: { x: p.x, ancho: p.ancho }, inicio: punto.x, registrado: false };
+            arrastre = { tipo: "mover", plataforma: p, original: { x: p.x, y: p.y, ancho: p.ancho }, inicio: punto.x, inicioY: punto.y, registrado: false };
             return;
         }
 
@@ -2276,6 +3337,8 @@
         } else if (comando && tecla === "d") {
             evento.preventDefault();
             if (objetoSeleccionado()) duplicarObjeto();
+            else if (trampaSeleccionada()) duplicarTrampa();
+            else if (elementoSeleccionado()) duplicarElemento();
             else duplicarPlataforma();
         } else if (comando) {
             return;
@@ -2285,26 +3348,35 @@
         } else if (tecla === "delete" || tecla === "backspace") {
             evento.preventDefault();
             if (objetoSeleccionado()) eliminarObjeto();
+            else if (trampaSeleccionada()) eliminarTrampa();
+            else if (elementoSeleccionado()) eliminarElemento();
             else eliminarPlataforma();
         } else if (tecla === "escape") {
             seleccionar(null);
         } else if (tecla === "v") {
             fijarHerramienta("seleccionar");
-        } else if (["1", "2", "3"].includes(tecla)) {
+        } else if (["1", "2", "3", "4"].includes(tecla)) {
             fijarHerramienta(TIPOS[Number(tecla) - 1].id);
-        } else if (tecla === "4" || tecla === "h") {
+        } else if (tecla === "5" || tecla === "h") {
             fijarHerramienta(HERRAMIENTA_HUECO);
-        } else if (tecla === "5" || tecla === "o") {
+        } else if (tecla === "6") {
+            fijarHerramienta(HERRAMIENTA_FLOTANTE);
+        } else if (tecla === "7" || tecla === "t") {
+            fijarHerramienta(HERRAMIENTA_TRAMPA);
+        } else if (tecla === "8" || tecla === "e") {
+            fijarHerramienta(HERRAMIENTA_ELEMENTO);
+        } else if (tecla === "9" || tecla === "o") {
             fijarHerramienta(HERRAMIENTA_OBJETO);
         } else if (tecla === "f") {
             encajar();
         } else if (tecla === "a") {
             verTodo();
-        } else if (tecla.startsWith("arrow") && (plataformaSeleccionada() || objetoSeleccionado())) {
+        } else if (tecla.startsWith("arrow") && (plataformaSeleccionada() || objetoSeleccionado() || trampaSeleccionada() || elementoSeleccionado())) {
             evento.preventDefault();
             const paso = evento.shiftKey ? estado.snap * 4 : estado.snap;
             editar(() => {
-                const p = plataformaSeleccionada() || objetoSeleccionado();
+                const p = plataformaSeleccionada() || objetoSeleccionado() || trampaSeleccionada() || elementoSeleccionado()?.datos;
+                if (!p) return;
                 if (tecla === "arrowleft") p.x = Math.max(0, p.x - paso);
                 if (tecla === "arrowright") p.x += paso;
                 if (tecla === "arrowup") p.y -= 16;
@@ -2414,7 +3486,9 @@
     // ------------------------------------------------------------ Arranque
 
     function enlazarCampo(id, aplicar) {
-        $(id).addEventListener("change", (evento) => {
+        const nodo = $(id);
+        if (!nodo) return;
+        nodo.addEventListener("change", (evento) => {
             if (!pisoActivo()) return;
             editar((piso) => aplicar(piso, evento.target.value, plataformaSeleccionada()));
             sincronizarInspector();
@@ -2422,9 +3496,31 @@
     }
 
     function enlazarCampoObjeto(id, aplicar) {
-        $(id).addEventListener("change", (evento) => {
+        const nodo = $(id);
+        if (!nodo) return;
+        nodo.addEventListener("change", (evento) => {
             if (!objetoSeleccionado()) return;
             editar(() => aplicar(objetoSeleccionado(), evento.target.value));
+            sincronizarInspector();
+        });
+    }
+
+    function enlazarCampoTrampa(id, aplicar) {
+        const nodo = $(id);
+        if (!nodo) return;
+        nodo.addEventListener("change", (evento) => {
+            if (!trampaSeleccionada()) return;
+            editar(() => aplicar(trampaSeleccionada(), evento.target.value));
+            sincronizarInspector();
+        });
+    }
+
+    function enlazarCampoElemento(id, aplicar) {
+        const nodo = $(id);
+        if (!nodo) return;
+        nodo.addEventListener("change", (evento) => {
+            if (!elementoSeleccionado()) return;
+            editar(() => aplicar(elementoSeleccionado().datos, evento.target.value));
             sincronizarInspector();
         });
     }
@@ -2432,6 +3528,11 @@
     function entero(valor, respaldo, minimo = -Infinity) {
         const numero = Math.round(Number(valor));
         return Number.isFinite(numero) && valor !== "" ? Math.max(minimo, numero) : respaldo;
+    }
+
+    function decimal(valor, respaldo) {
+        const numero = Number(valor);
+        return Number.isFinite(numero) && valor !== "" ? numero : respaldo;
     }
 
     function crearChips(contenedor, enumeracion, clave) {
@@ -2448,6 +3549,20 @@
         ));
     }
 
+    function pedirArchivoImagen(carpetaSugerida, alElegir) {
+        const selector = $("selectorImagenArchivo");
+        if (!selector) return;
+        callbackSelectorImagen = (archivo) => {
+            if (!archivo) return;
+            const rutaRelativa = archivo.webkitRelativePath
+                ? archivo.webkitRelativePath
+                : `${carpetaSugerida}/${archivo.name}`;
+            alElegir(rutaRelativa);
+        };
+        selector.value = "";
+        selector.click();
+    }
+
     function construirInterfaz() {
         $("campoTipoPiso").replaceChildren(...Object.entries(TIPOS_PISO).map(([nombre, valor]) =>
             h("option", { value: valor }, nombre.charAt(0) + nombre.slice(1).toLowerCase())
@@ -2460,7 +3575,17 @@
         $("segTipo").replaceChildren(...TIPOS.map((tipo) =>
             h("button", {
                 "data-tipo": tipo.id,
-                onclick: () => editar(() => { plataformaSeleccionada().tipo = tipo.id; })
+                onclick: () => editar((piso) => {
+                    const p = plataformaSeleccionada();
+                    p.tipo = tipo.id;
+                    if ([TIPOS_PLATAFORMA.MOVIL, TIPOS_PLATAFORMA.CINTA, TIPOS_PLATAFORMA.REBOTE].includes(tipo.id) && p.y === ALTURA_PLATAFORMA_DEFAULT) {
+                        p.flotante = true;
+                        p.alto = 28;
+                    }
+                    if (tipo.trampa && !piso.trampasHabilitadas.includes(tipo.trampa)) {
+                        piso.trampasHabilitadas.push(tipo.trampa);
+                    }
+                })
             }, h("i", { class: `punto tipo-${tipo.id}` }), tipo.nombre)
         ));
 
@@ -2475,6 +3600,15 @@
             }, h("i", { class: `punto modo-${modo.id}` }), modo.nombre)
         ));
 
+        // Selector de archivo de imagen para Objetos, Trampas y Elementos
+        $("selectorImagenArchivo")?.addEventListener("change", (evento) => {
+            const archivo = evento.target.files?.[0];
+            if (archivo && callbackSelectorImagen) {
+                callbackSelectorImagen(archivo);
+                callbackSelectorImagen = null;
+            }
+        });
+
         // Acepta el nombre solo, con .png o con la ruta completa
         // Si es un tipo del catalogo, toma su tamano y su modo
         enlazarCampoObjeto("objTipo", (o, valor) => {
@@ -2487,10 +3621,94 @@
                 estado.tipoCatalogo = tipo.id;
             }
         });
+        enlazarCampoObjeto("objImagen", (o, valor) => { o.imagen = valor.trim(); });
         enlazarCampoObjeto("objX", (o, valor) => { o.x = entero(valor, o.x, 0); });
         enlazarCampoObjeto("objY", (o, valor) => { o.y = entero(valor, o.y); });
         enlazarCampoObjeto("objAncho", (o, valor) => { o.ancho = entero(valor, o.ancho, LADO_MINIMO_OBJETO); });
         enlazarCampoObjeto("objAlto", (o, valor) => { o.alto = entero(valor, o.alto, LADO_MINIMO_OBJETO); });
+        $("btnElegirImgObj")?.addEventListener("click", () => {
+            if (!objetoSeleccionado()) return;
+            pedirArchivoImagen("assets/objetos", (ruta) => {
+                editar(() => { objetoSeleccionado().imagen = ruta; });
+                sincronizarInspector();
+            });
+        });
+
+        // Campos de Trampa Activa
+        enlazarCampoTrampa("trampaTipo", (t, valor) => {
+            const def = TIPOS_TRAMPAS_UI.find((item) => item.id === valor) || TIPOS_TRAMPAS_UI[0];
+            t.tipo = def.id;
+            t.ancho = def.ancho;
+            t.alto = def.alto;
+            estado.ultimaTrampa = def.id;
+        });
+        enlazarCampoTrampa("trampaImagen", (t, valor) => { t.imagen = valor.trim(); });
+        enlazarCampoTrampa("trampaX", (t, valor) => { t.x = entero(valor, t.x, 0); });
+        enlazarCampoTrampa("trampaY", (t, valor) => { t.y = entero(valor, t.y, 0); });
+        enlazarCampoTrampa("trampaAncho", (t, valor) => { t.ancho = entero(valor, t.ancho, 16); });
+        enlazarCampoTrampa("trampaAlto", (t, valor) => { t.alto = entero(valor, t.alto, 16); });
+        enlazarCampoTrampa("trampaOrientacion", (t, valor) => { t.orientacion = valor || "arriba"; });
+        enlazarCampoTrampa("trampaIntervalo", (t, valor) => { t.intervaloMs = entero(valor, t.intervaloMs, 100); });
+        enlazarCampoTrampa("trampaDuracion", (t, valor) => { t.duracionMs = entero(valor, t.duracionMs, 100); });
+        enlazarCampoTrampa("trampaAviso", (t, valor) => { t.avisoMs = entero(valor, t.avisoMs, 0); });
+        enlazarCampoTrampa("trampaEje", (t, valor) => { t.eje = valor === "y" ? "y" : "x"; });
+        enlazarCampoTrampa("trampaRango", (t, valor) => { t.rango = entero(valor, t.rango, 16); });
+        enlazarCampoTrampa("trampaVelocidad", (t, valor) => { t.velocidad = decimal(valor, t.velocidad); });
+        enlazarCampoTrampa("trampaCanal", (t, valor) => { t.canal = valor.trim(); });
+        $("btnElegirImgTrampa")?.addEventListener("click", () => {
+            if (!trampaSeleccionada()) return;
+            pedirArchivoImagen("assets/trampas", (ruta) => {
+                editar(() => { trampaSeleccionada().imagen = ruta; });
+                sincronizarInspector();
+            });
+        });
+
+        // Campos de Elemento de Nivel (Checkpoint, Item/Poder, Interruptor, Ascensor Meta)
+        $("elemCategoria")?.addEventListener("change", (evento) => {
+            cambiarCategoriaElemento(evento.target.value);
+        });
+        enlazarCampoElemento("elemSubtipo", (d, valor) => {
+            const elem = elementoSeleccionado();
+            if (elem?.categoria === "interruptor") {
+                d.estilo = valor;
+                d.tipo = valor;
+                const esBoton = valor === TIPOS_INTERRUPTOR.BOTON_PISO;
+                if ((d.ancho === 52 || d.ancho === 44 || d.ancho === 56) && (d.alto === 22 || d.alto === 56 || d.alto === 20)) {
+                    const baseY = d.y + d.alto;
+                    d.ancho = esBoton ? 52 : 44;
+                    d.alto = esBoton ? 22 : 56;
+                    d.y = baseY - d.alto;
+                }
+            } else {
+                d.tipo = valor;
+                estado.ultimoSubtipoItem = valor;
+            }
+        });
+        enlazarCampoElemento("elemImagen", (d, valor) => { d.imagen = valor.trim(); });
+        enlazarCampoElemento("elemX", (d, valor) => { d.x = entero(valor, d.x, 0); });
+        enlazarCampoElemento("elemY", (d, valor) => { d.y = entero(valor, d.y, 0); });
+        enlazarCampoElemento("elemAncho", (d, valor) => { d.ancho = entero(valor, d.ancho || 36, 16); });
+        enlazarCampoElemento("elemAlto", (d, valor) => { d.alto = entero(valor, d.alto || 36, 16); });
+        enlazarCampoElemento("elemEtiqueta", (d, valor) => { d.etiqueta = valor.trim(); });
+        enlazarCampoElemento("elemCanal", (d, valor) => { d.canal = valor.trim() || "A"; });
+        enlazarCampoElemento("elemModoInterruptor", (d, valor) => {
+            d.modo = ["activar", "alternar", "tiempo"].includes(valor) ? valor : "activar";
+        });
+        enlazarCampoElemento("elemDuracionInterruptor", (d, valor) => { d.duracionMs = entero(valor, d.duracionMs || 5000, 500); });
+        $("elemRequiereLlave")?.addEventListener("change", (evento) => {
+            const elem = elementoSeleccionado();
+            if (elem?.categoria !== "meta") return;
+            editar(() => { elem.datos.requiereLlave = evento.target.checked; });
+            sincronizarInspector();
+        });
+        $("btnElegirImgElem")?.addEventListener("click", () => {
+            const elem = elementoSeleccionado();
+            if (!elem) return;
+            pedirArchivoImagen("assets/items", (ruta) => {
+                editar(() => { elem.datos.imagen = ruta; });
+                sincronizarInspector();
+            });
+        });
 
         $("segModoTipo").replaceChildren(...MODOS.map((modo) =>
             h("button", {
@@ -2529,9 +3747,47 @@
         enlazarCampo("platX", (piso, valor, p) => { p.x = entero(valor, p.x, 0); });
         enlazarCampo("platAncho", (piso, valor, p) => { p.ancho = entero(valor, p.ancho, ANCHO_MINIMO); });
         enlazarCampo("platY", (piso, valor, p) => { p.y = entero(valor, p.y, 1); });
+        enlazarCampo("platMovilEje", (piso, valor, p) => {
+            p.movil = p.movil || { eje: "x", rango: 140, velocidad: 2.2 };
+            p.movil.eje = valor === "y" ? "y" : "x";
+        });
+        enlazarCampo("platMovilRango", (piso, valor, p) => {
+            p.movil = p.movil || { eje: "x", rango: 140, velocidad: 2.2 };
+            p.movil.rango = entero(valor, p.movil.rango ?? 140, 16);
+        });
+        enlazarCampo("platMovilVel", (piso, valor, p) => {
+            p.movil = p.movil || { eje: "x", rango: 140, velocidad: 2.2 };
+            p.movil.velocidad = decimal(valor, p.movil.velocidad ?? 2.2);
+        });
+        enlazarCampo("platVelocidadCinta", (piso, valor, p) => { p.velocidadCinta = decimal(valor, p.velocidadCinta ?? 3.4); });
+        enlazarCampo("platFuerzaRebote", (piso, valor, p) => { p.fuerzaRebote = decimal(valor, p.fuerzaRebote ?? 20); });
+        enlazarCampo("platCanal", (piso, valor, p) => { p.canal = valor.trim(); });
+        $("platOcultaInicial")?.addEventListener("change", (evento) => {
+            if (!plataformaSeleccionada()) return;
+            editar(() => {
+                plataformaSeleccionada().ocultaInicial = evento.target.checked;
+            });
+            sincronizarInspector();
+        });
+        $("platFlotante").addEventListener("change", (evento) => {
+            if (!plataformaSeleccionada()) return;
+            editar(() => {
+                const p = plataformaSeleccionada();
+                p.flotante = evento.target.checked;
+                if (p.flotante && p.y === ALTURA_PLATAFORMA_DEFAULT) {
+                    p.y = ALTURA_PLATAFORMA_DEFAULT - 160;
+                    p.alto = 28;
+                } else if (!p.flotante) {
+                    p.y = ALTURA_PLATAFORMA_DEFAULT;
+                    p.alto = ALTO_TILE;
+                }
+            });
+            sincronizarInspector();
+        });
         enlazarCampo("platHueco", (piso, valor) => {
             const actual = huecoDespues(piso.plataformas, estado.seleccion);
-            desplazarDesde(piso, estado.seleccion + 1, entero(valor, actual, 0) - actual);
+            const sigIdx = siguienteIndiceSuelo(piso.plataformas, estado.seleccion);
+            if (sigIdx !== -1) desplazarDesde(piso, sigIdx, entero(valor, actual, 0) - actual);
         });
 
         $("btnDeshacer").addEventListener("click", deshacer);
@@ -2547,12 +3803,19 @@
         $("btnSubirPiso").addEventListener("click", () => moverPiso(-1));
         $("btnBajarPiso").addEventListener("click", () => moverPiso(1));
         $("btnEliminarPiso").addEventListener("click", eliminarPiso);
+        $("btnGenerarFase2").addEventListener("click", generarCircuitoFase2EnPiso);
         $("btnDuplicarPlat").addEventListener("click", duplicarPlataforma);
         $("btnEliminarPlat").addEventListener("click", eliminarPlataforma);
         $("btnTamanoOriginal").addEventListener("click", usarTamanoOriginal);
         $("btnApoyarObjeto").addEventListener("click", apoyarObjeto);
         $("btnDuplicarObjeto").addEventListener("click", duplicarObjeto);
         $("btnEliminarObjeto").addEventListener("click", eliminarObjeto);
+        $("btnApoyarTrampa").addEventListener("click", apoyarTrampa);
+        $("btnDuplicarTrampa").addEventListener("click", duplicarTrampa);
+        $("btnEliminarTrampa").addEventListener("click", eliminarTrampa);
+        $("btnApoyarElemento").addEventListener("click", apoyarElemento);
+        $("btnDuplicarElemento").addEventListener("click", duplicarElemento);
+        $("btnEliminarElemento").addEventListener("click", eliminarElemento);
         $("btnZoomMenos").addEventListener("click", () => fijarZoom(vista.zoom / 1.25));
         $("btnZoomMas").addEventListener("click", () => fijarZoom(vista.zoom * 1.25));
         $("btnEncajar").addEventListener("click", encajar);
@@ -2627,3 +3890,4 @@
 
     iniciar();
 })();
+

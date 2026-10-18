@@ -50,8 +50,12 @@
                     <button class="btn herramienta" data-herramienta="normal" title="Pintar piso normal (1)"><i class="punto tipo-normal"></i>Piso <kbd>1</kbd></button>
                     <button class="btn herramienta" data-herramienta="pivote" title="Pintar trampa pivote (2)"><i class="punto tipo-pivote"></i>Pivote <kbd>2</kbd></button>
                     <button class="btn herramienta" data-herramienta="resbaladizo" title="Pintar piso resbaladizo (3)"><i class="punto tipo-resbaladizo"></i>Resbaladizo <kbd>3</kbd></button>
-                    <button class="btn herramienta" data-herramienta="hueco" title="Abrir un hueco en el piso (4)"><i class="punto tipo-hueco"></i>Hueco <kbd>4</kbd></button>
-                    <button class="btn herramienta" data-herramienta="objeto" title="Colocar un objeto (5)"><i class="punto tipo-objeto"></i>Objeto <kbd>5</kbd></button>
+                    <button class="btn herramienta" data-herramienta="quebradizo" title="Pintar piso quebradizo (4)"><i class="punto tipo-quebradizo"></i>Quebradizo <kbd>4</kbd></button>
+                    <button class="btn herramienta" data-herramienta="hueco" title="Abrir un hueco en el piso (5)"><i class="punto tipo-hueco"></i>Hueco <kbd>5</kbd></button>
+                    <button class="btn herramienta" data-herramienta="flotante" title="Colocar plataforma flotante, móvil, cinta o rebote (6)"><i class="punto tipo-flotante"></i> Aérea/Móvil <kbd>6</kbd></button>
+                    <button class="btn herramienta" data-herramienta="trampa" title="Colocar trampa activa (7)"><i class="punto tipo-trampa"></i>Trampa <kbd>7</kbd></button>
+                    <button class="btn herramienta" data-herramienta="elemento" title="Colocar Vida, Poder Doble Salto, Tarjeta, Checkpoint o Meta (8)"><i class="punto tipo-elemento"></i>Vida/Poder/Meta <kbd>8</kbd></button>
+                    <button class="btn herramienta" data-herramienta="objeto" title="Colocar un objeto (9)"><i class="punto tipo-objeto"></i>Objeto <kbd>9</kbd></button>
                 </div>
                 <label class="opcion">Imán
                     <select id="selectSnap">
@@ -65,7 +69,7 @@
                 <label class="opcion">Personaje
                     <select id="selectPersonaje"></select>
                 </label>
-                <label class="opcion"><input type="checkbox" id="chkArcos" checked> Arcos de salto</label>
+                <label class="opcion"><input type="checkbox" id="chkArcos" checked> Arcos Salto + Dash</label>
                 <label class="opcion"><input type="checkbox" id="chkFondo" checked> Fondo</label>
                 <div class="grupo-botones zoom">
                     <button id="btnZoomMenos" class="btn btn-icono" title="Alejar">−</button>
@@ -88,6 +92,7 @@
         </main>
 
         <aside class="columna columna-inspector">
+            <input type="file" id="selectorImagenArchivo" accept="image/*" hidden>
             <section class="panel">
                 <h2>Piso</h2>
                 <div class="fila-campos">
@@ -126,13 +131,17 @@
                 <div class="campo">Props permitidos
                     <div id="chipsProps" class="chips"></div>
                 </div>
+                <div class="grupo-botones ancho-completo">
+                    <button id="btnGenerarFase2" class="btn" title="Carga las trampas, plataformas aéreas, poderes, vidas y ascensor sugeridos para este piso">⚡ Cargar circuito sugerido</button>
+                </div>
             </section>
 
             <section class="panel">
                 <h2>Plataforma <span id="tituloPlataforma" class="conteo"></span></h2>
-                <p id="vacioPlataforma" class="ayuda">Con la herramienta Seleccionar, haz clic en una plataforma para ver y editar sus datos.</p>
+                <p id="vacioPlataforma" class="ayuda">Con Seleccionar, haz clic en cualquier tramo de suelo o plataforma aérea para editar su tipo, movimiento, cinta o rebote.</p>
                 <div id="panelPlataforma" hidden>
-                    <div class="segmentado" id="segTipo"></div>
+                    <div class="segmentado segmentado-envolver" id="segTipo"></div>
+                    <label class="opcion"><input type="checkbox" id="platFlotante"> Plataforma flotante / elevada (no parte el suelo)</label>
                     <div class="fila-campos">
                         <label class="campo">X
                             <input type="number" id="platX" step="1" min="0">
@@ -144,6 +153,36 @@
                             <input type="number" id="platY" step="1">
                         </label>
                     </div>
+                    <div id="grupoPlatMovil" class="fila-campos" hidden>
+                        <label class="campo">Eje
+                            <select id="platMovilEje">
+                                <option value="x">Horizontal (X)</option>
+                                <option value="y">Vertical (Y)</option>
+                            </select>
+                        </label>
+                        <label class="campo">Rango (px)
+                            <input type="number" id="platMovilRango" step="8" min="16">
+                        </label>
+                        <label class="campo">Velocidad
+                            <input type="number" id="platMovilVel" step="0.2" min="0.2">
+                        </label>
+                    </div>
+                    <div id="grupoPlatCinta" class="fila-campos" hidden>
+                        <label class="campo">Velocidad cinta (+ der / - izq)
+                            <input type="number" id="platVelocidadCinta" step="0.2">
+                        </label>
+                    </div>
+                    <div id="grupoPlatRebote" class="fila-campos" hidden>
+                        <label class="campo">Fuerza de rebote (negativo = impulsa arriba)
+                            <input type="number" id="platFuerzaRebote" step="0.5" max="-5">
+                        </label>
+                    </div>
+                    <div class="fila-campos">
+                        <label class="campo">Canal de botón / interruptor (opcional)
+                            <input type="text" id="platCanal" placeholder="ej. puente_1" spellcheck="false">
+                        </label>
+                    </div>
+                    <label class="opcion"><input type="checkbox" id="platOcultaInicial"> Oculta hasta activar su botón / canal</label>
                     <label class="campo" id="grupoHueco">Hueco después (px)
                         <input type="number" id="platHueco" step="1" min="0">
                     </label>
@@ -156,12 +195,163 @@
             </section>
 
             <section class="panel">
+                <h2>Trampa <span id="tituloTrampa" class="conteo"></span></h2>
+                <p id="vacioTrampa" class="ayuda">Usa la herramienta Trampa (7) para colocar pinchos, vapor, láser, aplastador o sierra donde quieras y cárgales cualquier imagen PNG.</p>
+                <div id="panelTrampa" hidden>
+                    <label class="campo">Tipo de trampa
+                        <select id="trampaTipo">
+                            <option value="pinchos">Pinchos / Cables eléctricos</option>
+                            <option value="vapor">Chorro de vapor / fuego</option>
+                            <option value="laser">Rayo láser de seguridad</option>
+                            <option value="aplastador">Aplastador pesado</option>
+                            <option value="sierra">Sierra / Obstáculo móvil</option>
+                        </select>
+                    </label>
+                    <label class="campo">Imagen personalizada (ruta PNG opcional)
+                        <div class="fila-campos">
+                            <input type="text" id="trampaImagen" placeholder="assets/trampas/pinchos.png" spellcheck="false">
+                            <button type="button" id="btnElegirImgTrampa" class="btn" title="Elegir imagen PNG">📁 PNG</button>
+                        </div>
+                    </label>
+                    <label class="campo">Canal de botón que apaga esta trampa (opcional)
+                        <input type="text" id="trampaCanal" placeholder="ej. corte_vapor" spellcheck="false">
+                    </label>
+                    <div class="fila-campos">
+                        <label class="campo">X
+                            <input type="number" id="trampaX" step="1" min="0">
+                        </label>
+                        <label class="campo">Y
+                            <input type="number" id="trampaY" step="1">
+                        </label>
+                    </div>
+                    <div class="fila-campos">
+                        <label class="campo">Ancho
+                            <input type="number" id="trampaAncho" step="1" min="16">
+                        </label>
+                        <label class="campo">Alto
+                            <input type="number" id="trampaAlto" step="1" min="16">
+                        </label>
+                        <label class="campo" id="grupoTrampaOrientacion">Orientación
+                            <select id="trampaOrientacion">
+                                <option value="horizontal">Horizontal</option>
+                                <option value="vertical">Vertical</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="fila-campos" id="grupoTrampaTiempos">
+                        <label class="campo">Intervalo (ms)
+                            <input type="number" id="trampaIntervalo" step="100" min="200">
+                        </label>
+                        <label class="campo">Duración (ms)
+                            <input type="number" id="trampaDuracion" step="100" min="100">
+                        </label>
+                        <label class="campo">Aviso (ms)
+                            <input type="number" id="trampaAviso" step="50" min="50">
+                        </label>
+                    </div>
+                    <div class="fila-campos" id="grupoTrampaMovimiento">
+                        <label class="campo">Eje
+                            <select id="trampaEje">
+                                <option value="x">Horizontal (X)</option>
+                                <option value="y">Vertical (Y)</option>
+                            </select>
+                        </label>
+                        <label class="campo">Rango (px)
+                            <input type="number" id="trampaRango" step="8" min="0">
+                        </label>
+                        <label class="campo">Velocidad
+                            <input type="number" id="trampaVelocidad" step="0.2" min="0.2">
+                        </label>
+                    </div>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnApoyarTrampa" class="btn" title="Alinear sobre el suelo">Apoyar en piso</button>
+                        <button id="btnDuplicarTrampa" class="btn" title="Duplicar (⌘D)">Duplicar</button>
+                        <button id="btnEliminarTrampa" class="btn btn-peligro" title="Eliminar (Supr)">Eliminar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Vida / Poder / Botón / Meta <span id="tituloElemento" class="conteo"></span></h2>
+                <p id="vacioElemento" class="ayuda">Usa Vida/Poder/Meta (8) para colocar Vidas (+1 ♥), el Poder de Doble Salto (2X), Botones/Palancas para accionar plataformas o trampas, Checkpoints o el Ascensor Meta.</p>
+                <div id="panelElemento" hidden>
+                    <div class="fila-campos">
+                        <label class="campo">Categoría
+                            <select id="elemCategoria">
+                                <option value="item">Item / Poder / Vida</option>
+                                <option value="interruptor">Botón / Palanca / Válvula</option>
+                                <option value="checkpoint">Checkpoint (Tablero Piso)</option>
+                                <option value="meta">Ascensor / Salida Meta</option>
+                            </select>
+                        </label>
+                        <label class="campo" id="grupoElemSubtipo">Subtipo / Estilo
+                            <select id="elemSubtipo">
+                                <option value="vida">Vida (+1 ♥)</option>
+                                <option value="doble_salto">Poder Doble Salto (2X ▲)</option>
+                                <option value="tarjeta">Tarjeta Acceso (Llave)</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="fila-campos" id="grupoElemInterruptor" hidden>
+                        <label class="campo">Canal que activa
+                            <input type="text" id="elemCanal" placeholder="ej. puente_1" spellcheck="false">
+                        </label>
+                        <label class="campo">Modo
+                            <select id="elemModoInterruptor">
+                                <option value="activar">Permanente (Activar)</option>
+                                <option value="alternar">Interruptor (ON / OFF)</option>
+                                <option value="tiempo">Temporizado (ms)</option>
+                            </select>
+                        </label>
+                        <label class="campo" id="grupoElemDuracion">Duración (ms)
+                            <input type="number" id="elemDuracionInterruptor" step="500" min="1000" value="5000">
+                        </label>
+                    </div>
+                    <label class="campo">Imagen personalizada (ruta PNG opcional)
+                        <div class="fila-campos">
+                            <input type="text" id="elemImagen" placeholder="assets/items/vida.png" spellcheck="false">
+                            <button type="button" id="btnElegirImgElem" class="btn" title="Elegir imagen PNG">📁 PNG</button>
+                        </div>
+                    </label>
+                    <div class="fila-campos">
+                        <label class="campo">X
+                            <input type="number" id="elemX" step="1" min="0">
+                        </label>
+                        <label class="campo">Y
+                            <input type="number" id="elemY" step="1">
+                        </label>
+                        <label class="campo">Ancho
+                            <input type="number" id="elemAncho" step="1" min="16">
+                        </label>
+                        <label class="campo">Alto
+                            <input type="number" id="elemAlto" step="1" min="16">
+                        </label>
+                    </div>
+                    <label class="campo" id="grupoElemEtiqueta">Etiqueta / Nombre
+                        <input type="text" id="elemEtiqueta" placeholder="ASCENSOR / CP / PUENTE 1">
+                    </label>
+                    <label class="opcion" id="grupoElemLlave"><input type="checkbox" id="elemRequiereLlave"> Requiere Tarjeta de Acceso para abrir</label>
+                    <div class="grupo-botones ancho-completo">
+                        <button id="btnApoyarElemento" class="btn">Apoyar en piso</button>
+                        <button id="btnDuplicarElemento" class="btn">Duplicar</button>
+                        <button id="btnEliminarElemento" class="btn btn-peligro">Eliminar</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
                 <h2>Objeto <span id="tituloObjeto" class="conteo"></span></h2>
-                <p id="vacioObjeto" class="ayuda">Con la herramienta Objeto, haz clic en el piso para colocar uno. Con Seleccionar, haz clic en un objeto para editarlo.</p>
+                <p id="vacioObjeto" class="ayuda">Con la herramienta Objeto (9), haz clic donde quieras para colocar uno y asígnale cualquier imagen PNG.</p>
                 <div id="panelObjeto" hidden>
-                    <label class="campo">Imagen <span id="estadoObjeto" class="estado-activo"></span>
+                    <label class="campo">Tipo de Catálogo <span id="estadoObjeto" class="estado-activo"></span>
                         <input type="text" id="objTipo" list="listaObjetos" spellcheck="false">
                         <datalist id="listaObjetos"></datalist>
+                    </label>
+                    <label class="campo">Imagen personalizada (ruta PNG opcional)
+                        <div class="fila-campos">
+                            <input type="text" id="objImagen" placeholder="assets/objetos/mi_objeto.png" spellcheck="false">
+                            <button type="button" id="btnElegirImgObj" class="btn" title="Elegir imagen PNG">📁 PNG</button>
+                        </div>
                     </label>
                     <p id="ayudaObjeto" class="ayuda"></p>
                     <p id="catalogoObjeto" class="ayuda"></p>

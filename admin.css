@@ -361,11 +361,31 @@ select:focus-visible {
 .tipo-normal { background: var(--tipo-normal); }
 .tipo-pivote { background: var(--tipo-pivote); }
 .tipo-resbaladizo { background: var(--tipo-resbaladizo); }
+.tipo-quebradizo { background: #d9822b; }
+.tipo-flotante { background: #5ce1e6; }
+.tipo-movil { background: #5ce1e6; }
+.tipo-cinta { background: #ffe14d; }
+.tipo-rebote { background: #ff3b5c; }
+.tipo-trampa { background: #ff47c2; }
+.tipo-elemento { background: #38f8a8; }
 .tipo-hueco { background: var(--error); }
 .tipo-objeto,
 .modo-fondo { background: var(--modo-fondo); }
 .modo-plataforma { background: var(--modo-plataforma); }
 .modo-solido { background: var(--modo-solido); }
+
+.opcion-parry {
+    color: #ff7ae0;
+    font-weight: 600;
+}
+
+.segmentado-envolver {
+    flex-wrap: wrap;
+}
+.segmentado-envolver button {
+    flex: 1 1 30%;
+    border-bottom: 1px solid var(--borde-fuerte);
+}
 
 .pista {
     padding: 6px 12px;
@@ -463,6 +483,8 @@ select:focus-visible {
 }
 
 #panelPlataforma,
+#panelTrampa,
+#panelElemento,
 #panelObjeto,
 #panelTipo {
     display: flex;

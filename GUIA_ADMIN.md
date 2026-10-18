@@ -1,665 +1,216 @@
-# Guia del editor de pisos (admin)
+# Guía Completa del Editor de Pisos (`admin.html`)
 
-El editor es `admin.html`. Sirve para armar los pisos del juego sin escribir codigo: se
-dibujan las plataformas, los huecos, las trampas y los objetos, y al guardar el editor
-escribe el archivo `niveles.js`, que es el que lee el juego.
+El editor visual es **[`admin.html`](./admin.html)**. Permite diseñar y probar los 20 pisos del edificio de **"¡Sin Leche!"** sin escribir código: puedes pintar distintos tipos de suelo, agregar plataformas móviles o secretas, colocar obstáculos del edificio, configurar botones/interruptores por canal, repartir vidas o poderes y asignar imágenes PNG personalizadas. Al guardar, el editor genera automáticamente [`niveles.js`](./niveles.js).
 
-## Indice
+---
 
-1. [Como abrirlo y que archivos usa](#1-como-abrirlo-y-que-archivos-usa)
-2. [La pantalla](#2-la-pantalla)
-3. [Lista de pisos](#3-lista-de-pisos)
-4. [Datos del piso](#4-datos-del-piso)
-5. [El lienzo: moverse y hacer zoom](#5-el-lienzo-moverse-y-hacer-zoom)
-6. [Herramientas para pintar el piso](#6-herramientas-para-pintar-el-piso)
-7. [Seleccionar y editar una plataforma](#7-seleccionar-y-editar-una-plataforma)
-8. [Huecos y saltos](#8-huecos-y-saltos)
-9. [Objetos](#9-objetos)
-10. [Panel de problemas](#10-panel-de-problemas)
-11. [Probar el piso](#11-probar-el-piso)
-12. [Guardar](#12-guardar)
-13. [Deshacer, rehacer y borrador automatico](#13-deshacer-rehacer-y-borrador-automatico)
+## Índice
+
+1. [Cómo abrirlo y qué archivos utiliza](#1-cómo-abrirlo-y-qué-archivos-utiliza)
+2. [Estructura de la pantalla](#2-estructura-de-la-pantalla)
+3. [Lista de pisos (Recorrido del Piso 20 al Piso 01)](#3-lista-de-pisos-recorrido-del-piso-20-al-piso-01)
+4. [Datos generales del piso](#4-datos-generales-del-piso)
+5. [El lienzo: navegación, zoom y minimapa](#5-el-lienzo-navegación-zoom-y-minimapa)
+6. [Herramientas de edición](#6-herramientas-de-edición)
+7. [Plataformas de suelo y plataformas flotantes](#7-plataformas-de-suelo-y-plataformas-flotantes)
+8. [Trampas y obstáculos del edificio](#8-trampas-y-obstáculos-del-edificio)
+9. [Elementos de nivel: Vidas, Doble Salto, Botones, Checkpoints y Meta](#9-elementos-de-nivel-vidas-doble-salto-botones-checkpoints-y-meta)
+10. [Sistema de Canales (Botones que activan puentes o apagan trampas)](#10-sistema-de-canales-botones-que-activan-puentes-o-apagan-trampas)
+11. [Objetos y Catálogo de Objetos](#11-objetos-y-catálogo-de-objetos)
+12. [Validación automática (Panel Problemas)](#12-validación-automática-panel-problemas)
+13. [Probar el piso en vivo y guardar `niveles.js`](#13-probar-el-piso-en-vivo-y-guardar-nivelesjs)
 14. [Atajos de teclado](#14-atajos-de-teclado)
-15. [Que escribe el editor en niveles.js](#15-que-escribe-el-editor-en-nivelesjs)
-16. [Limites y cosas a tener en cuenta](#16-limites-y-cosas-a-tener-en-cuenta)
 
 ---
 
-## 1. Como abrirlo y que archivos usa
+## 1. Cómo abrirlo y qué archivos utiliza
 
-Abre `admin.html` con doble clic, en **Chrome o Edge**. No hace falta servidor ni instalar
-nada. En Firefox y Safari tambien funciona, pero guardar es menos comodo (ver
-[capitulo 12](#12-guardar)).
+Abre [`admin.html`](./admin.html) en **Google Chrome o Microsoft Edge** (recomendados porque permiten sobrescribir [`niveles.js`](./niveles.js) directamente con `Cmd+S` / `Ctrl+S`).
 
-| Archivo | Para que sirve | Quien lo escribe |
-| --- | --- | --- |
-| `admin.html`, `admin.js`, `admin.css` | El editor | Codigo |
-| `niveles.js` | Los datos de todos los pisos | **El editor**, al guardar |
-| `niveles_base.js` | Constantes y funciones (`piso()`, `objeto()`, `TRAMPAS`...) | Codigo |
-| `personajes.js` | Velocidad, salto y tamano de cada personaje | Codigo |
-| `index.html` | El juego. El editor lo abre para probar | Codigo |
-| `assets/fondos/`, `assets/tiles/`, `assets/props/` | Imagenes | Tu |
+| Archivo | Función | ¿Quién lo modifica? |
+| :--- | :--- | :--- |
+| [`admin.html`](./admin.html), [`admin.js`](./admin.js), [`admin.css`](./admin.css) | Interfaz y lógica del editor visual | Código del proyecto |
+| [`niveles.js`](./niveles.js) | Datos de todos los pisos y `CATALOGO_OBJETOS` | **El editor al guardar** |
+| [`niveles_base.js`](./niveles_base.js) | Constantes y funciones constructoras (`piso()`, `trampaVapor()`, `interruptor()`, etc.) | Código del proyecto |
+| [`personajes.js`](./personajes.js) | Velocidad, salto, doble salto y sprites de Juan y Ame | Código del proyecto |
+| [`index.html`](./index.html) | El juego (se abre también dentro del modal **▶ Probar piso**) | Código del proyecto |
 
-Al abrirse, el editor lee `niveles.js` y muestra los pisos tal como estan guardados.
-
-**Importante:** `niveles.js` se reescribe completo cada vez que guardas. Si agregas codigo
-propio a mano en ese archivo (funciones, comentarios), se pierde. El codigo propio va en
-`niveles_base.js`.
+> **Importante:** Cada vez que presionas **Guardar `niveles.js`**, el archivo [`niveles.js`](./niveles.js) se regenera por completo. Si necesitas crear nuevas funciones auxiliares o constantes globales, agrégalas en [`niveles_base.js`](./niveles_base.js).
 
 ---
 
-## 2. La pantalla
+## 2. Estructura de la pantalla
 
-```text
-+--------------------------------------------------------------------------+
-| Editor de pisos · estado      [Deshacer][Rehacer] [Probar][Ver codigo][Guardar] |
-+-----------+------------------------------------------+-------------------+
-|           | Herramientas · Iman · Personaje · Zoom   | PISO              |
-| PISOS     +------------------------------------------+ (datos del piso)  |
-|           | Pista de la herramienta activa           +-------------------+
-| 01 ...    +------------------------------------------+ PLATAFORMA        |
-| 02 ...    | Regla (px)                               +-------------------+
-| 03 ...    |                                          | OBJETO            |
-|           |            LIENZO                        +-------------------+
-|           |                                          | PROBLEMAS         |
-|           +------------------------------------------+                   |
-|           | Minimapa                                 |                   |
-|           | Cursor x/y · tamano del mundo · ayuda    |                   |
-+-----------+------------------------------------------+-------------------+
-```
-
-- **Barra superior:** estado de guardado y las acciones generales.
-- **Columna izquierda:** la lista de pisos.
-- **Centro:** las herramientas, el lienzo donde se dibuja y el minimapa.
-- **Columna derecha:** cuatro paneles. *Piso* siempre visible; *Plataforma* y *Objeto*
-  muestran sus campos solo cuando hay algo seleccionado; *Problemas* lista lo que hay que
-  revisar.
-
-El texto junto al titulo dice `Sin cambios` o `● Cambios sin guardar (N pisos)`, y cuantos
-pisos tienen errores.
+- **Barra superior:** Indicador de cambios sin guardar, botones **Deshacer / Rehacer**, **⚡ Generar circuito Fase 2**, **▶ Probar piso**, **Ver código** y **Guardar `niveles.js`**.
+- **Columna izquierda (Pisos):** Lista de los 20 niveles del edificio en el orden en que se juegan (del Piso 20 en la cima hasta el Piso 01 en la planta baja).
+- **Centro:** Barra de herramientas, selector de grilla (imán), selector de personaje de referencia para arcos de salto, lienzo interactivo con regla en píxeles y minimapa inferior.
+- **Columna derecha (Inspector):**
+  - **Piso:** Propiedades generales del nivel activo.
+  - **Plataforma:** Se muestra al seleccionar un tramo de suelo o plataforma flotante.
+  - **Objeto:** Se muestra al seleccionar un objeto decorativo o mueble con colisión.
+  - **Trampa activa:** Se muestra al seleccionar un obstáculo del edificio.
+  - **Elemento de nivel:** Se muestra al seleccionar un Ítem/Poder, Botón/Interruptor, Checkpoint o Ascensor Meta.
+  - **Catálogo de objetos:** Plantillas reutilizables de objetos con sus márgenes de colisión.
+  - **Problemas:** Detector en tiempo real de huecos imposibles, solapamientos o imágenes faltantes.
 
 ---
 
-## 3. Lista de pisos
+## 3. Lista de pisos (Recorrido del Piso 20 al Piso 01)
 
-Cada fila muestra el color base, el ID, el nombre y, si corresponde:
-
-- un **punto amarillo**: el piso tiene cambios sin guardar;
-- un **numero rojo**: cantidad de errores;
-- un **numero amarillo**: cantidad de avisos (solo si no hay errores).
-
-Haz clic en una fila para editar ese piso.
-
-| Boton | Que hace |
-| --- | --- |
-| `＋` | Crea un piso nuevo al final. Copia fondo, tema de tiles y props del piso activo, y arranca con una sola plataforma de 1280px. |
-| `⧉` | Duplica el piso activo, con plataformas y objetos. Le pone un ID nuevo y agrega "(copia)" al nombre. |
-| `↑` `↓` | Mueve el piso en la lista. El orden de la lista es el orden del selector del juego. |
-| `✕` | Elimina el piso. Se puede deshacer. |
+El orden de la lista izquierda define la progresión de la aventura:
+- Empieza arriba de todo en el **Piso 20: Mi Departamento (¡Sin Leche!)**.
+- Al tocar el **Ascensor de Bajada (Meta)** de cada nivel, el jugador pasa al siguiente piso de la lista hasta llegar al **Piso 01: Recepción (Salida a la Calle)**.
+- Usa los botones **`＋`** (nuevo piso), **`⧉`** (duplicar), **`↑` / `↓`** (reordenar) y **`✕`** (eliminar).
 
 ---
 
-## 4. Datos del piso
+## 4. Datos generales del piso
 
-Panel **Piso**, arriba a la derecha.
-
-| Campo | Que es | Notas |
-| --- | --- | --- |
-| **ID** | Numero del piso | Entero mayor que cero y unico. Si se repite, el juego solo carga el primero. |
-| **Nombre** | Texto del selector del juego | Por ejemplo `Piso 02: Archivo Central`. |
-| **Fondo** | Ruta de la imagen de fondo | Por ejemplo `assets/fondos/fondo_02_archivo.png`. Al lado dice `✓ existe` o `✕ no existe`. Sugiere los fondos que ya usan otros pisos. |
-| **Tipo de piso** | Linoleo, Parque, Concreto o Azulejo | Solo define el color de relleno cuando falta la imagen del tile. |
-| **Color base** | Color del piso | Se ve detras del fondo y cuando falta la imagen de fondo. |
-| **Tema de tiles** | Nombre del juego de tiles | Con `archivo`, el juego busca `assets/tiles/piso_archivo_01.png`, los bordes `borde_roto_izq_archivo.png` / `borde_roto_der_archivo.png` y `trampa_pivote_archivo.png`. |
-| **Variantes** | Cuantos tiles `_01`, `_02`... tiene el tema | El editor cuenta los que encuentra. Si el numero no coincide, ofrece un boton **Usar N**. |
-| **Trampas habilitadas** | `HUECO_ROTO`, `PIVOTE`, `RESBALADIZO` | Clic para activar o desactivar. Ver nota abajo. |
-| **Props permitidos** | Decoracion vieja, fija | Dibujos hechos por codigo en posiciones fijas. No se ven en el editor. Para decorar conviene usar objetos ([capitulo 9](#9-objetos)). |
-
-**Sobre las trampas habilitadas:** la unica que cambia el juego es `PIVOTE`. Si un piso
-tiene plataformas pivote pero `PIVOTE` no esta activada, se comportan como piso normal.
-`HUECO_ROTO` y `RESBALADIZO` son informativas. Al pintar una trampa con las herramientas,
-el editor la activa solo.
-
-Los cambios en los campos se aplican al salir del campo o al apretar Enter.
+En el panel **Piso** puedes configurar:
+- **ID y Nombre:** El nombre aparece en el HUD superior y en la tarjeta de transición al bajar de piso.
+- **Fondo (`fondoRuta`):** Ruta del PNG en `assets/fondos/`. Indica al instante `✓ existe` o `✕ no existe`.
+- **Tipo de piso y Color base:** Color de respaldo cuando aún no hay imagen cargada.
+- **Tema de tiles (`tilesTema`) y Variantes (`tilesVariantes`):** Determina qué archivos `assets/tiles/piso_<tema>_NN.png` y bordes rotos se usan para vestir el suelo.
 
 ---
 
-## 5. El lienzo: moverse y hacer zoom
+## 5. El lienzo: navegación, zoom y minimapa
 
-El lienzo muestra el piso completo: fondo, plataformas, huecos, objetos y la posicion de
-**INICIO**, que es donde aparece el jugador (sobre la primera plataforma).
-
-Elementos de referencia:
-
-- **Marco azul:** los limites del mundo (720px de alto).
-- **Linea punteada horizontal:** la altura normal del piso, `y = 560`.
-- **Lineas verticales tenues:** cada 128px, el ancho de un tile.
-- **Regla superior:** posicion en pixeles. La marca azul sigue al cursor.
-- **Pie:** posicion del cursor, cantidad de plataformas y objetos, y ancho del mundo en
-  pixeles y en pantallas (una pantalla = 1280px).
-
-| Para | Como |
-| --- | --- |
-| Desplazarse a los lados | Rueda del mouse, o arrastrar el fondo vacio con Seleccionar |
-| Desplazarse con cualquier herramienta | `Espacio` + arrastrar, o arrastrar con el boton derecho o el del medio |
-| Zoom | `Cmd`/`Ctrl` + rueda, o los botones `−` y `＋` (de 8% a 400%) |
-| Ver el alto completo | **Ajustar** o tecla `F` |
-| Ver el piso entero | **Ver todo** o tecla `A` |
-| Saltar a otra zona | Clic o arrastrar en el **minimapa** |
-
-En el minimapa, el recuadro azul es lo que se ve en el lienzo. Las plataformas aparecen con
-el color de su tipo, los huecos con el color de su dificultad y los objetos con el color de
-su modo.
-
-Opciones de la barra de herramientas:
-
-- **Iman:** tamano de la grilla a la que se pega lo que mueves (8, 16, 32, 64 o 128px).
-  Mantener `Alt` mientras arrastras lo desactiva.
-- **Personaje:** con que personaje se calculan los arcos de salto y se dibuja el INICIO.
-- **Arcos de salto:** muestra u oculta la trayectoria del salto sobre cada hueco.
-- **Fondo:** muestra u oculta la imagen de fondo, para ver mejor el piso.
+- **Desplazarse:** Rueda del mouse, o mantener `Espacio` + arrastrar (también clic medio o derecho).
+- **Zoom:** `Cmd` / `Ctrl` + rueda del mouse, o botones `−` y `＋`.
+- **Ajustar alto (`F`) / Ver todo (`A`):** Encaja el nivel en pantalla.
+- **Imán (Grilla):** Alinea movimientos a `8`, `16`, `32`, `64` o `128 px`. Mantén presionada la tecla **`Alt`** mientras arrastras para mover cualquier elemento libremente píxel por píxel.
 
 ---
 
-## 6. Herramientas para pintar el piso
+## 6. Herramientas de edición
 
-Las herramientas **pintan**: arrastras en horizontal y ese tramo pasa a ser del tipo
-elegido. Lo que habia en ese tramo se recorta y se reemplaza.
-
-| Herramienta | Tecla | Que hace |
-| --- | --- | --- |
-| **Seleccionar** | `V` | Elegir, mover y redimensionar ([capitulo 7](#7-seleccionar-y-editar-una-plataforma)) |
-| **Piso** | `1` | Pinta piso normal. Rellena huecos y reemplaza trampas. |
-| **Pivote** | `2` | Convierte el tramo en una trampa que gira y se cae al pisarla. |
-| **Resbaladizo** | `3` | Convierte el tramo en piso resbaladizo. |
-| **Hueco** | `4` o `H` | Abre un hueco del ancho arrastrado. |
-| **Objeto** | `5` o `O` | Coloca un objeto con un clic ([capitulo 9](#9-objetos)). |
-
-Como se comportan:
-
-- **Altura:** el tramo se pinta a la altura de la plataforma que tengas bajo el cursor. Si
-  no hay ninguna, a la altura normal (`y = 560`).
-- **Un clic sin arrastrar:** Piso, Pivote y Resbaladizo crean un tramo de 384px. Hueco abre
-  uno de 128px centrado en el clic.
-- **Union automatica:** dos tramos pegados, del mismo tipo y a la misma altura, se unen en
-  una sola plataforma. Los pivotes no se unen: cada uno gira por separado.
-- **Iman:** los extremos se pegan a los bordes de otras plataformas cercanas y, si no hay
-  ninguno, a la grilla.
-- **Trampas:** pintar Pivote, Resbaladizo o Hueco activa la trampa correspondiente en el
-  piso.
-
-Si el tramo ya era de ese tipo, o intentas abrir un hueco donde no hay piso, el editor avisa
-y no cambia nada.
-
-En el lienzo, los pivotes se ven con un tinte naranja y una barra en el centro (el eje de
-giro), y el resbaladizo con un tinte celeste.
+| Herramienta | Atajo | Uso en el lienzo |
+| :--- | :---: | :--- |
+| **Seleccionar** | `V` | Clic para seleccionar cualquier elemento; arrastrar para mover o redimensionar desde sus asas. |
+| **Piso** | `1` | Arrastra horizontalmente para pintar suelo firme o rellenar huecos. |
+| **Pivote** | `2` | Pinta una plataforma inestable que gira al pisarla y cae a los 325 ms. |
+| **Resbaladizo** | `3` | Pinta suelo mojado/encerado (reduce la fricción y hace patinar al personaje). |
+| **Quebradizo** | `4` | Pinta baldosas flojas que tiemblan al pisarlas, se rompen tras `420 ms` y se regeneran luego. |
+| **Hueco** | `5` o `H` | Abre un vacío en el suelo. El editor calcula si Juan y Ame pueden saltarlo. |
+| **Flotante** | `6` | Un clic coloca una plataforma aérea (fija, móvil, cinta o rebote). |
+| **Trampa** | `7` o `T` | Un clic coloca un obstáculo activo del edificio. |
+| **Elemento / Meta** | `8` o `E` | Un clic coloca una Vida, Poder Doble Salto, Café, Tarjeta, Botón/Interruptor, Checkpoint o Meta. |
+| **Objeto** | `9` o `O` | Un clic coloca un mueble o prop desde `assets/props/` o del Catálogo. |
 
 ---
 
-## 7. Seleccionar y editar una plataforma
+## 7. Plataformas de suelo y plataformas flotantes
 
-Con **Seleccionar**, haz clic en una plataforma. Queda con borde azul y dos asas blancas.
+Al seleccionar cualquier plataforma se abre el panel **Plataforma**:
 
-| Para | Como |
-| --- | --- |
-| Moverla a los lados | Arrastrarla |
-| Cambiarle el ancho | Arrastrar un asa blanca (minimo 64px) |
-| Moverla con el teclado | `←` `→` un paso de iman; con `Shift`, cuatro pasos |
-| Subirla o bajarla | `↑` `↓`, de a 16px, o el campo **Y** |
-| Duplicarla | Boton **Duplicar** o `Cmd+D`. La copia aparece al final del piso. |
-| Eliminarla | Boton **Eliminar**, `Supr` o `Backspace` |
-| Quitar la seleccion | `Esc` o clic en el fondo |
-
-El panel **Plataforma** muestra:
-
-- **Tipo:** Normal, Pivote o Resbaladizo. Cambia el tipo sin repintar.
-- **X:** donde empieza.
-- **Ancho.**
-- **Y:** altura. `560` es el piso normal; un numero menor queda mas arriba. Sirve para
-  hacer plataformas elevadas.
-- **Hueco despues (px):** el espacio hasta la plataforma siguiente. Cambiarlo **mueve todas
-  las plataformas que siguen**, sin tocar sus anchos.
-
-Las plataformas se ordenan siempre de izquierda a derecha, y ese orden es su numero (la
-etiqueta bajo cada una dice `numero · tipo · ancho`).
+- **Tipo de plataforma:**
+  - **Normal:** Suelo firme estándar.
+  - **Pivote:** Gira sobre su eje central al pisarla.
+  - **Resbaladizo:** Suelo mojado con inercia real en el motor físico.
+  - **Quebradizo:** Se agrieta al pisarla, cae y reaparece tras unos segundos.
+  - **Móvil:** Se desplaza en el **Eje Horizontal (`x`)** o **Vertical (`y`)** según el **Rango (px)** y **Velocidad** configurados.
+  - **Cinta:** Empuja continuamente al jugador hacia la derecha (`Velocidad > 0`) o izquierda (`Velocidad < 0`).
+  - **Rebote:** Impulsa automáticamente al jugador hacia arriba con la **Fuerza de rebote** indicada (ej. `-19.5`).
+- **Plataforma flotante (aérea):** Casilla que permite mover la plataforma a cualquier altura `Y` sin afectar los huecos del suelo principal.
+- **Canal de interruptor y Oculta al inicio:** Permite crear puentes o plataformas secretas que aparecen al activar un botón (ver [Sección 10](#10-sistema-de-canales-botones-que-activan-puentes-o-apagan-trampas)).
 
 ---
 
-## 8. Huecos y saltos
+## 8. Trampas y obstáculos del edificio
 
-En el editor **un hueco no es un dato aparte**: es el espacio vacio entre una plataforma y
-la siguiente. Se crea de tres formas: pintando con Hueco, separando dos plataformas, o
-escribiendo el campo "Hueco despues".
+Con la herramienta **`7` Trampa** o seleccionando una trampa existente puedes configurar:
 
-El editor calcula cuanto salta cada personaje (con su velocidad y fuerza de salto de
-`personajes.js`, y el desnivel entre las dos plataformas) y pinta cada hueco segun el
-resultado:
+| Tipo en el Inspector | ID interno | Comportamiento en el edificio |
+| :--- | :--- | :--- |
+| **Mueble / Escombro Punzante** | `pinchos` | Daño fijo al contacto. Puede orientarse hacia `arriba`, `abajo`, `izquierda` o `derecha`. |
+| **Chorro de Vapor / Agua** | `vapor` | Cañería rota que alterna entre reposo, aviso parpadeante (`avisoMs`) y chorro activo (`duracionMs`). |
+| **Cables Pelados / Cortocircuito** | `laser` | Arco eléctrico intermitente entre dos bornes con fase de preaviso y descarga. |
+| **Ventilador / Extractor** | `sierra` | Obstáculo giratorio que patrulla en el eje `X` o `Y` según su `rango` y `velocidad`. |
+| **Cielo Raso / Plafón que Cae** | `aplastador` | Bloque pesado en el techo que avisa, cae de golpe al piso y vuelve a subir. |
 
-| Color | Significado |
-| --- | --- |
-| Verde | Todos los personajes llegan con margen. |
-| Amarillo | Queda muy justo (a menos del 10% del limite), o solo llega alguno de los personajes. |
-| Rojo | Nadie llega. Es un error. |
-
-Sobre cada hueco se ve su ancho y, si **Arcos de salto** esta activo, la trayectoria del
-personaje elegido: verde si llega, roja si no.
-
-Al seleccionar una plataforma, debajo del campo "Hueco despues" aparece el alcance exacto
-de cada personaje para ese hueco.
+Todas las trampas cuentan con:
+- **Imagen PNG (`Elegir…`):** Para reemplazar el gráfico por defecto con tu propio PNG.
+- **Canal de interruptor:** Si escribes un canal (ej. `corte_1`), al pisar un botón con ese canal la trampa quedará **apagada/desactivada**.
 
 ---
 
-## 9. Objetos
+## 9. Elementos de nivel: Vidas, Doble Salto, Botones, Checkpoints y Meta
 
-Un objeto es una imagen suelta que se coloca en cualquier parte del piso. Puede ser
-decoracion o tener colision: cajas, escritorios, archivadores, estantes, cualquier cosa
-donde el jugador se pueda parar o que le corte el paso.
+Con la herramienta **`8` Elemento / Meta**, el panel **Elemento de nivel** permite elegir entre 4 categorías:
 
-Lo recomendable es definir cada objeto una vez en el **catalogo** (seccion 9.7) con su
-imagen, tamano, modo y caja de colision, y despues colocarlo en los pisos que quieras.
-
-### 9.1 La imagen
-
-```text
-assets/props/<nombre>.png
-```
-
-PNG con fondo transparente, del tamano que quieras. Si el archivo no existe, el editor y el
-juego dibujan una caja de color con el nombre, asi se puede armar el piso antes de tener el
-arte.
-
-Convencion de nombres: `<objeto>_<tema>_<NN>`, en minusculas, sin tildes ni espacios.
-
-| Archivo | Que es |
-| --- | --- |
-| `caja_sotano_01.png` | Caja chica del sotano |
-| `caja_sotano_02.png` | Otra caja del sotano (otro dibujo u otro tamano) |
-| `archivador_archivo_01.png` | Archivador del piso Archivo |
-| `estante_biblioteca_01.png` | Estante de la biblioteca |
-
-El tema es el mismo que el de los tiles del piso (`sotano`, `archivo`, `biblioteca`...).
-El numero distingue variantes. El catalogo arma solo los nombres: crea `caja_<tema>_01` y
-las variantes siguen con `_02`, `_03`...
-
-### 9.2 Los tres modos
-
-| Modo | Color en el editor | Que hace en el juego |
-| --- | --- | --- |
-| **Fondo** | Violeta, borde punteado | Solo se ve. Se dibuja detras del piso y del jugador. |
-| **Encima** | Verde | El jugador se para encima. De costado y desde abajo lo atraviesa. |
-| **Solido** | Rosa | El jugador se para encima y ademas choca de costado y con la cabeza. |
-
-Los objetos con colision tienen una franja gruesa en el borde de arriba: ahi pisa el
-jugador.
-
-La colision es el rectangulo de la imagen, menos los **margenes de colision** del tipo en
-el catalogo (seccion 9.7). Si el PNG tiene aire transparente arriba o a los lados y el
-objeto no tiene margenes, el jugador va a parecer que flota o que choca con nada: recorta la
-imagen al ras del dibujo o pon margenes.
-
-### 9.3 Colocar un objeto
-
-1. Elige **Objeto** (tecla `5`).
-2. Haz clic en el lienzo. Si el clic cae cerca del piso, el objeto queda apoyado; si cae
-   mas arriba, queda flotando donde hiciste clic.
-3. El editor vuelve solo a Seleccionar, con el objeto nuevo elegido.
-
-El objeto nuevo usa el ultimo tipo que elegiste. Si es un tipo del catalogo, nace con su
-tamano y su modo; si no, con el tamano real de la imagen (o 96x96 si no existe) y el ultimo
-modo usado. La pista de arriba del lienzo dice que se va a colocar.
-
-Para colocar un tipo del catalogo, haz clic en el en el panel **Catalogo de objetos**: queda
-elegida la herramienta Objeto con ese tipo.
-
-### 9.4 Editar un objeto
-
-Con **Seleccionar**, haz clic en el objeto.
-
-| Para | Como |
-| --- | --- |
-| Moverlo | Arrastrarlo, en cualquier direccion |
-| Cambiarle el tamano | Arrastrar el cuadrado blanco de la esquina superior derecha. La esquina inferior izquierda queda fija, asi no se despega del piso. |
-| Mantener la proporcion | `Shift` mientras cambias el tamano |
-| Moverlo con el teclado | `←` `→` un paso de iman; `↑` `↓` de a 16px |
-| Duplicarlo | **Duplicar** o `Cmd+D`. La copia aparece al lado. |
-| Eliminarlo | **Eliminar**, `Supr` o `Backspace` |
-
-Al moverlo, la base del objeto se pega sola al piso o a otro objeto con colision que tenga
-debajo. `Alt` desactiva el iman.
-
-El panel **Objeto** muestra:
-
-- **Imagen:** el nombre del archivo, sin `.png`. Acepta tambien la ruta completa y la
-  limpia. Debajo aparece la ruta real y, si la imagen existe, su tamano. Si escribes el
-  nombre de un tipo del catalogo, el objeto toma su tamano y su modo.
-- **Catalogo:** de que tipo es. **Editar tipo** abre el tipo en el catalogo. Si al objeto
-  le cambiaste el tamano o el modo, aparece **Restablecer** para volver a los del catalogo.
-  Si el objeto no esta en el catalogo, **Agregar al catalogo** crea un tipo con su nombre,
-  tamano y modo.
-- **Modo:** Fondo, Encima o Solido.
-- **X, Y:** la esquina superior izquierda.
-- **Ancho, Alto:** tamano con que se dibuja y colisiona. La imagen se estira a ese tamano.
-- **Tamano original:** vuelve al tamano real del PNG.
-- **Apoyar en el piso:** baja el objeto hasta la plataforma que tiene debajo.
-- Abajo de todo, a cuantos px del piso queda la parte que se pisa y si Juan y Ame llegan de
-  un salto (`✓` / `✕`).
-
-### 9.5 Que se selecciona al hacer clic
-
-Cuando hay cosas superpuestas, el clic elige en este orden: primero los objetos con
-colision, despues las plataformas y por ultimo los objetos de fondo. Asi un objeto de fondo
-grande no impide seleccionar el piso que tiene delante.
-
-### 9.6 Alturas utiles
-
-Medidas desde el piso hasta la parte de arriba del objeto:
-
-| Altura | Quien sube |
-| --- | --- |
-| Hasta 114px | Juan y Ame |
-| Hasta 156px | Solo Juan |
-| Mas de 156px | Nadie de un salto |
-
-Un objeto **solido** mas alto que el salto de un personaje le corta el paso. El editor lo
-marca como aviso.
-
-Se puede armar una escalera apilando objetos: al mover uno encima de otro, la base se pega
-sola al borde de arriba del de abajo. Por ejemplo, una caja de 96px y encima otra de 96px:
-Ame sube a la primera y desde ahi a la segunda.
-
-### 9.7 Catalogo de objetos
-
-El catalogo es la lista de tipos de objeto del juego. Cada tipo se define una vez y se usa
-en cualquier piso, como un molde: si cambias el tipo, cambian los objetos colocados.
-
-El panel **Catalogo de objetos** (columna derecha, debajo del panel Objeto) muestra cada
-tipo con su miniatura, su nombre, su tamano y cuantos hay colocados. El punto de color de la
-esquina es el modo. Si el tamano se ve naranja, falta la imagen.
-
-| Para | Como |
-| --- | --- |
-| Crear un tipo | **+ Nuevo tipo**. Nace como `caja_<tema del piso>_01`, solido, de 96x96. |
-| Crear una variante | **Variante**: copia el tipo elegido con el numero siguiente (`_02`, `_03`...). Sirve para la misma caja en otra altura. |
-| Colocarlo | Clic en el tipo y despues clic en el lienzo |
-| Crear un tipo desde un objeto colocado | En el panel Objeto, **Agregar al catalogo** |
-| Eliminarlo | **Eliminar tipo**. Si hay objetos colocados, pregunta antes. Los objetos no se borran: quedan sin catalogo. |
-
-Campos de un tipo:
-
-- **Archivo:** nombre del PNG en `assets/props/`, sin `.png`. Se limpia solo: "Caja Grande
-  Sotano" queda `caja_grande_sotano`. Cambiarlo renombra tambien todos los objetos
-  colocados de ese tipo, en todos los pisos.
-- **Nombre:** como se ve en el catalogo ("Caja de carton"). Es solo para el editor.
-- **Modo:** Fondo, Encima o Solido.
-- **Ancho, Alto:** tamano con que se coloca. **Tamano de la imagen** usa el del PNG.
-- **Margenes de colision:** cuantos px se recorta la caja de colision por la izquierda, la
-  derecha y arriba. La base no se recorta: el objeto apoya donde se ve.
-
-Como funcionan los margenes. Si `caja_sotano_01.png` mide 96x96 pero el dibujo tiene 8px
-transparentes a cada lado y 12px arriba, pon margenes 8, 8 y 12. El jugador pisa la caja
-12px mas abajo del borde de la imagen y choca con el dibujo, no con el aire. Si un objeto se
-coloca mas grande o mas chico que el tipo, los margenes se escalan en proporcion.
-
-La **vista previa** dibuja el tipo con la imagen (punteado blanco), la caja de colision
-(trazo del color del modo) y la altura de salto de cada personaje. La linea queda verde si
-el personaje llega arriba y roja si no.
-
-Que pasa con los objetos colocados al editar un tipo:
-
-- Los que tienen **el mismo tamano y modo que el tipo** lo siguen: si cambias el alto de 96 a
-  128, crecen hacia arriba sin despegarse del piso.
-- Los que agrandaste o achicaste a mano se quedan como estan. **Aplicar a todos** los
-  iguala al tipo.
-- Los margenes se aplican siempre a todos, porque son del tipo y no del objeto.
-
-El catalogo se guarda en `niveles.js` junto con los pisos (capitulo 15) y entra en deshacer
-y en el borrador automatico como cualquier otro cambio.
+1. **Vida / Poder / Item (`item`):**
+   - **Vida Extra (`vida`):** Suma `+1 ♥` al jugador (hasta 6 corazones).
+   - **Poder Doble Salto (`doble_salto`):** Desbloquea el segundo salto en el aire (`SALTO 2X ▲`) durante el resto de la partida.
+   - **Café Expreso (`cafe`):** Otorga un turbo temporal de velocidad de carrera (`☕ TURBO`).
+   - **Llave / Tarjeta de Ascensor (`tarjeta`):** Abre el ascensor del piso cuando la Meta tiene activada la opción *Requiere Tarjeta*.
+2. **Botón / Interruptor de Piso (`interruptor`):**
+   - Placa o botón que el jugador acciona al pasar por encima. Configura su **Canal**, **Modo** (`permanente` o `temporal`) y **Duración (ms)**.
+3. **Checkpoint (`checkpoint`):**
+   - Guarda el punto de reaparición del jugador dentro del piso si pierde una vida.
+4. **Ascensor de Bajada / Meta (`meta`):**
+   - Puerta de salida hacia el piso inferior. Puedes marcar **Requiere Tarjeta de Acceso** para exigir que el jugador recoja primero la tarjeta del nivel.
 
 ---
 
-## 10. Panel de problemas
+## 10. Sistema de Canales (Botones que activan puentes o apagan trampas)
 
-Lista lo que el editor encuentra en el piso activo. Se actualiza con cada cambio.
+El sistema de canales conecta **Botones/Interruptores** con **Plataformas** y **Trampas** sin escribir una sola línea de código:
 
-| Nivel | Color | Significado |
-| --- | --- | --- |
-| **Error** | Rojo | El piso no funciona bien asi. |
-| **Aviso** | Amarillo | Funciona, pero probablemente no es lo que querias. |
-| **Info** | Gris | Dato para tener en cuenta. |
-
-Cada problema puede traer dos botones:
-
-- **Ver plataforma N** / **Ver objeto N:** lleva la vista a ese elemento y lo selecciona.
-- **Un arreglo de un clic**, cuando el editor sabe como resolverlo.
-
-Que revisa:
-
-| Problema | Nivel | Arreglo de un clic |
-| --- | --- | --- |
-| ID invalido o repetido | Error | Usar el siguiente ID libre |
-| Piso sin nombre | Error | – |
-| Piso sin plataformas | Error | – |
-| Dos plataformas superpuestas | Error | **Separar** |
-| Hueco que nadie puede saltar | Error | **Reducir a N px** |
-| Hueco que solo salta un personaje | Aviso | **Reducir a N px** |
-| Hueco muy justo | Aviso | – |
-| El jugador aparece sobre un pivote | Aviso | – |
-| Plataforma mas angosta que un tile (128px) | Aviso | – |
-| Plataforma fuera de la pantalla (Y menor que 190 o mayor que 656) | Aviso | – |
-| Hay pivotes pero `PIVOTE` no esta habilitada | Aviso | **Habilitar** |
-| Piso sin fondo, o falta una imagen de fondo, tile o borde | Aviso | – |
-| Objeto sin imagen asignada | Aviso | – |
-| Objeto solido que corta el paso | Aviso | – |
-| Falta `trampa_pivote_<tema>.png` | Info | – |
-| Falta la imagen de un objeto | Info | – |
-| Objeto al que algun personaje no llega de un salto | Info | – |
-| Hay resbaladizo o huecos sin su trampa en la lista | Info | **Habilitar** |
-| El piso mide menos que una pantalla | Info | – |
-| `niveles.js` declaraba un hueco distinto al espacio real | Info | – |
-
-El ultimo aparece solo al abrir el editor, en pisos escritos a mano, y desaparece al editar
-o guardar el piso.
-
-Los errores **no impiden guardar**: el editor guarda igual y avisa cuantos pisos tienen
-errores.
+1. **Crear un puente oculto activado por botón:**
+   - Coloca una **Plataforma flotante**, márcala con **`Oculta al inicio`** y escribe `puente_1` en su campo **`Canal de interruptor`**.
+   - Coloca un elemento de categoría **`Botón / Interruptor de Piso`** antes del hueco y escribe `puente_1` en su campo **`Canal que activa`**.
+   - En el juego, la plataforma se verá como una silueta punteada tenue; en cuanto el jugador pise el botón, el puente se materializará para poder cruzar.
+2. **Apagar una trampa (ej. cortar la corriente o cerrar una llave de vapor):**
+   - Selecciona la trampa (por ejemplo unos *Cables Pelados* o *Chorro de Vapor*) y escribe `valvula_1` en su campo **`Canal de interruptor`**.
+   - Coloca un **`Botón / Interruptor de Piso`** con el canal `valvula_1`. Al pisarlo, la trampa se desactivará.
+3. **Interruptores con tiempo límite:**
+   - Si eliges el modo **`Temporal (con tiempo)`** y pones `5000` ms, el puente o corte durará 5 segundos (mostrando una barra de cuenta regresiva sobre el botón) y luego volverá a su estado original.
 
 ---
 
-## 11. Probar el piso
+## 11. Objetos y Catálogo de Objetos
 
-El boton **▶ Probar** abre el juego dentro del editor, en el piso activo y **con los
-cambios actuales, aunque no esten guardados**.
-
-- Flechas para correr, `Espacio` para saltar.
-- `C` muestra u oculta las colisiones (ver abajo).
-- `Esc` o `✕` vuelve al editor.
-- **Reiniciar** vuelve a cargar el piso desde el comienzo.
-
-Probar no guarda nada y no modifica `niveles.js`.
-
-### Ver las colisiones
-
-Con la tecla `C` (o la casilla **Ver colisiones** del juego) se dibujan encima de todo las
-cajas con las que el juego calcula los choques. Sirve para comprobar que el dibujo coincide
-con lo que se pisa.
-
-| Borde | Que es |
-| --- | --- |
-| Amarillo, lleno | Caja de colision del jugador (`colision` en `personajes.js`). La linea gruesa de abajo son los pies. |
-| Rojo, dos marcas en los pies | El 40% del ancho: para apoyarse hay que pisar al menos esa parte. |
-| Blanco, punteado | El cuadro completo del sprite (`render` en `personajes.js`). |
-| Celeste, punteado | Plataforma. La linea gruesa de arriba es donde se pisa. |
-| Naranja | Pivote. Se apaga cuando ya se cayo y no sostiene. |
-| Verde | Objeto en modo Encima. |
-| Rosa | Objeto solido. |
-| Violeta, punteado | Objeto de fondo (no choca, se muestra para ubicarlo). |
-
-Arriba a la derecha aparece la posicion del jugador. Fuera del editor tambien se puede abrir
-el juego con las colisiones activadas: `index.html?colisiones`.
-
-Que mirar:
-
-- **Los pies del sprite tienen que tocar la linea de abajo del cuadro amarillo.** Si el
-  dibujo queda por encima, el personaje parece flotar; si queda por debajo, hundido. Se
-  corrige con `render.offsetY` en `personajes.js`.
-- **El cuadro amarillo tiene que cubrir el cuerpo**, no el aire del sprite. Si es mas ancho
-  que el personaje, choca antes de tocar las cosas. Se corrige con `colision.ancho` y
-  `colision.offsetX`.
-- **El borde de un objeto tiene que coincidir con el dibujo.** Si el PNG tiene aire
-  transparente, se ve el rectangulo mas grande que la imagen: recorta el PNG o ajusta su
-  tamano en el editor.
+- **Tres modos de objeto:**
+  - **`Fondo` (Violeta):** Decoración detrás del jugador, sin colisión.
+  - **`Encima` (Verde):** Plataforma *one-way* (el jugador puede saltar desde abajo y pararse arriba).
+  - **`Sólido` (Rosa):** Bloquea por arriba, por los costados y desde abajo.
+- **Catálogo de objetos:** Permite definir plantillas con **márgenes de colisión** (`izquierda`, `derecha`, `arriba`) para recortar el aire transparente de un PNG sin tener que reeditar la imagen.
 
 ---
 
-## 12. Guardar
+## 12. Validación automática (Panel Problemas)
 
-**Guardar niveles.js** (o `Cmd+S` / `Ctrl+S`) escribe el archivo completo con todos los
-pisos.
-
-**En Chrome y Edge:**
-
-1. La primera vez se abre una ventana para elegir el archivo. Elige el `niveles.js` de la
-   carpeta del juego y acepta reemplazarlo.
-2. Desde ahi, cada guardado escribe directo en ese archivo, sin preguntar, hasta que
-   cierres o recargues la pagina.
-
-Si eliges otro nombre, el editor guarda ahi y te recuerda que el juego solo lee
-`niveles.js`.
-
-**En Firefox y Safari:** el editor descarga un `niveles.js`. Hay que moverlo a mano a la
-carpeta del juego, reemplazando el anterior.
-
-**Ver codigo** muestra el archivo que se va a guardar, con botones para copiarlo o
-descargarlo. Sirve para revisar antes de guardar.
-
-Despues de guardar, recarga `index.html` para ver los cambios en el juego.
+El panel **Problemas** revisa continuamente el piso activo y ofrece botones para ir directo al elemento o aplicar correcciones automáticas en un clic:
+- Huecos imposibles de saltar para Juan o Ame.
+- Plataformas de suelo superpuestas.
+- Objetos sólidos demasiado altos que bloquean el paso.
+- Rutas de imágenes PNG que aún no existen en la carpeta `assets/`.
 
 ---
 
-## 13. Deshacer, rehacer y borrador automatico
+## 13. Probar el piso en vivo y guardar `niveles.js`
 
-**Deshacer y rehacer:** botones `↶` `↷`, o `Cmd+Z` y `Shift+Cmd+Z` (tambien `Cmd+Y`).
-Guarda hasta 100 pasos y cubre todo: plataformas, objetos, datos del piso, y crear, mover o
-eliminar pisos. El historial se pierde al recargar la pagina.
-
-**Borrador automatico:** mientras haya cambios sin guardar, el editor guarda una copia en
-el navegador. Si cierras o recargas sin guardar, al volver aparece una franja:
-
-> Hay cambios del (fecha) que no estan en niveles.js. **[Restaurar] [Descartar]**
-
-- **Restaurar** recupera esos cambios. Todavia falta guardarlos en `niveles.js`.
-- **Descartar** los borra y sigue con lo que esta en el archivo.
-
-El borrador vive en ese navegador y en esa computadora: no viaja con la carpeta del juego.
+- **▶ Probar piso:** Abre un modal interactivo con el juego cargado exactamente en el piso que estás editando, incluyendo tus cambios aún no guardados.
+- **Guardar `niveles.js` (`Cmd+S` / `Ctrl+S`):** Escribe el archivo [`niveles.js`](./niveles.js) con el catálogo y los 20 pisos listos para jugar en [`index.html`](./index.html).
 
 ---
 
 ## 14. Atajos de teclado
 
-Los atajos no funcionan mientras el cursor esta dentro de un campo de texto (salvo guardar).
-
-| Tecla | Accion |
-| --- | --- |
+| Tecla | Acción |
+| :--- | :--- |
 | `V` | Herramienta Seleccionar |
-| `1` `2` `3` | Piso, Pivote, Resbaladizo |
-| `4` o `H` | Hueco |
-| `5` o `O` | Objeto |
-| `←` `→` | Mover lo seleccionado un paso de iman (`Shift`: cuatro pasos) |
-| `↑` `↓` | Subir o bajar lo seleccionado 16px |
-| `Supr` / `Backspace` | Eliminar lo seleccionado |
-| `Cmd+D` | Duplicar lo seleccionado |
-| `Esc` | Quitar la seleccion, o cerrar la ventana abierta |
-| `Cmd+Z` | Deshacer |
-| `Shift+Cmd+Z` o `Cmd+Y` | Rehacer |
-| `Cmd+S` | Guardar |
-| `F` | Ajustar al alto |
-| `A` | Ver todo el piso |
-| `Espacio` + arrastrar | Mover la vista |
-| `Cmd` + rueda | Zoom |
-| `Alt` al arrastrar | Sin iman |
-| `Shift` al redimensionar un objeto | Mantener la proporcion |
-
-En Windows, `Ctrl` reemplaza a `Cmd`.
-
----
-
-## 15. Que escribe el editor en niveles.js
-
-Arriba de los pisos va el catalogo de objetos:
-
-```js
-const CATALOGO_OBJETOS = [
-    tipoObjeto("caja_sotano_01", "Caja de carton", 96, 96, MODOS_OBJETO.SOLIDO, { margenes: { izquierda: 8, derecha: 8, arriba: 12 } }),
-    tipoObjeto("caja_sotano_02", "Caja alta", 96, 160, MODOS_OBJETO.SOLIDO),
-    tipoObjeto("escritorio_archivo_01", "Escritorio", 160, 96, MODOS_OBJETO.PLATAFORMA)
-];
-```
-
-`tipoObjeto(archivo, nombre, ancho, alto, modo, { margenes })`. Los margenes que valen 0 no
-se escriben. Si no hay tipos se escribe `const CATALOGO_OBJETOS = [];`.
-
-Un piso guardado se ve asi:
-
-```js
-{
-    id: 2,
-    nombre: "Piso 02: Archivo Central",
-    fondoRuta: "assets/fondos/fondo_02_archivo.png",
-    colorPlaceholder: "#30342d",
-    tipoPiso: TIPOS_PISO.LINOLEO,
-    tilesTema: "archivo",
-    tilesVariantes: 3,
-    trampasHabilitadas: [TRAMPAS.HUECO_ROTO],
-    propsPermitidos: [PROPS.ARCHIVADOR, PROPS.ESTANTES, PROPS.CAJAS],
-    objetos: [
-        objeto("cajas", 400, 496, 96, 64, MODOS_OBJETO.SOLIDO)
-    ],
-    plataformas: [
-        piso(0, 1090),
-        pisoConHueco(1090, 446, 192),
-        pivoteConHueco(1728, 384, 192),
-        piso(2304, 896, { y: 464 })
-    ]
-}
-```
-
-Como traduce cada cosa:
-
-| En el editor | En `niveles.js` |
-| --- | --- |
-| Plataforma normal | `piso(x, ancho)` |
-| Plataforma normal seguida de un hueco | `pisoConHueco(x, ancho, anchoHueco)` |
-| Pivote | `pivote(...)` / `pivoteConHueco(...)` |
-| Resbaladizo | `pisoResbaladizo(...)` / `pisoResbaladizoConHueco(...)` |
-| Plataforma a otra altura | Se agrega `{ y: N }` al final |
-| Objeto | `objeto(nombre, x, y, ancho, alto, modo)` |
-| Tipo del catalogo | `tipoObjeto(archivo, nombre, ancho, alto, modo, { margenes })` |
-
-- La lista `objetos` solo se escribe si el piso tiene objetos.
-- El hueco se calcula solo, como el espacio hasta la plataforma siguiente.
-- Si un piso tiene propiedades extra que el editor no conoce, las conserva al guardar.
-- Los comentarios y el formato escritos a mano no se conservan.
-
-Tambien se puede editar `niveles.js` a mano y despues abrir el editor: lo lee igual. El
-detalle de cada funcion esta en `GUIA_PISOS_TRAMPAS.md`.
-
----
-
-## 16. Limites y cosas a tener en cuenta
-
-- **No sube ni copia imagenes.** El editor solo guarda nombres y rutas. Los PNG se copian a
-  mano a `assets/fondos/`, `assets/tiles/` y `assets/props/`.
-- **No lista las carpetas.** Los campos de fondo, tema e imagen sugieren lo que ya usan
-  otros pisos, no lo que hay en el disco. Si el nombre esta bien escrito, el editor lo
-  confirma con `✓ existe`.
-- **Los props viejos no se ven.** Los de "Props permitidos" se dibujan en el juego pero no
-  en el editor.
-- **El resbaladizo es solo visual por ahora.** El juego lo dibuja con un brillo celeste
-  pero no cambia el movimiento del jugador.
-- **El inicio no se elige.** El jugador aparece siempre sobre la primera plataforma (la de
-  mas a la izquierda).
-- **El ancho del mundo lo dan las plataformas.** Un objeto mas alla de la ultima plataforma
-  queda fuera del alcance del jugador.
-- **Al morir, el jugador reaparece** en la ultima plataforma normal que piso, nunca sobre
-  un pivote ni sobre un objeto.
-- **Dos pestanas del editor a la vez** se pisan entre si al guardar. Usa una sola.
+| `1` `2` `3` `4` | Pintar Piso, Pivote, Resbaladizo, Quebradizo |
+| `5` o `H` | Abrir Hueco |
+| `6` | Colocar Plataforma Flotante |
+| `7` o `T` | Colocar Trampa del Edificio |
+| `8` o `E` | Colocar Elemento (Vida, Poder, Botón, Checkpoint, Meta) |
+| `9` o `O` | Colocar Objeto / Mueble |
+| `Flechas` | Mover selección (`Shift` = 4 pasos) |
+| `Supr` / `Backspace` | Eliminar elemento seleccionado |
+| `Cmd+D` / `Ctrl+D` | Duplicar elemento seleccionado |
+| `Cmd+Z` / `Shift+Cmd+Z` | Deshacer / Rehacer (hasta 100 pasos) |
+| `Cmd+S` / `Ctrl+S` | Guardar `niveles.js` |
+| `Alt` *(mientras arrastras)* | Desactivar imán / grilla |
+| `Espacio` *(mientras arrastras)* | Desplazar la cámara por el lienzo |

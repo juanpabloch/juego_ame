@@ -21,16 +21,20 @@
             <button id="btnPersonaje2" class="btn-personaje" onclick="seleccionarPersonaje('personaje2')">Ame</button>
         </div>
 
+        <label class="opcion-colisiones" title="Activar/desactivar poder de Doble Salto para probar">
+            <input type="checkbox" id="chkDobleSalto"> Poder Doble Salto
+        </label>
+
         <label class="opcion-colisiones" title="Tecla C">
             <input type="checkbox" id="chkColisiones"> Ver colisiones <kbd>C</kbd>
         </label>
         
     </div>
     
-    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    <canvas id="gameCanvas" width="1366" height="768"></canvas>
     
     <div class="controles">
-        <p>Flechas [ Izquierda / Derecha ] para correr | [ Barra Espaciadora ] para saltar | [ C ] ver colisiones</p>
+        <p><b>Mover:</b> Flechas / WASD | <b>Saltar (y Doble Salto con poder):</b> [ Espacio / Z / Arriba ] | <b>Dash (tierra/aire):</b> [ Shift / X ] | <b>Agacharse:</b> [ Abajo ] | <b>Bajar plataforma:</b> [ Abajo + Espacio ] | <b>Colisiones:</b> [ C ]</p>
     </div>
 
     <!-- Cargamos los módulos en orden lógico -->
